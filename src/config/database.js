@@ -26,7 +26,8 @@ async function getDb() {
             connectionString: process.env.DATABASE_URL || "postgresql://user:pass@host/db",
             ssl: {
                 rejectUnauthorized: false
-            }
+            },
+            max: 1
         });
 
         const wrapper = {
