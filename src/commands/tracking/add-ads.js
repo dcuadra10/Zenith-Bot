@@ -1,0 +1,155 @@
+const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const path = require('path');
+const { addAdTrackingRecord } = require('../../utils/googleSheetsConnector');
+const { getDb } = require('../../config/database');
+const { getISOWeekString } = require('../../utils/dateHelpers');
+
+async function processAdsSubmission(interaction, amount) {
+    try {
+        const db = await getDb();
+        const config = await db.get(`SELECT * FROM guild_configs WHERE guildId = ?`, [interaction.guild.id]);
+        if (!config || !config.spreadsheetId) {
+            return interaction.editReply({ content: '❌ The server administrator has not configured the Google Sheets ID in the Web Dashboard yet.' });
+        }
+
+        try {
+            await addAdTrackingRecord(
+                config.spreadsheetId,
+                interaction.user.id, 
+                interaction.user.username, 
+                amount, 
+                new Date().toISOString()
+            );
+        } catch (err) {
+            console.warn('Google Sheets config is not connected or failed:', err.message);
+        }
+
+        await db.run(
+            `INSERT INTO global_stats (statName, value) VALUES ('total_ads_globales', ?) 
+             ON CONFLICT(statName) DO UPDATE SET value = value + ?`,
+             [amount, amount]
+        );
+
+        // --- R4 TRACKING (ADS) ---
+        const modConf = await db.get(`SELECT r4TrackingEnabled, r4TrackingRole FROM module_configs WHERE guildId = ?`, [interaction.guild.id]);
+        if (modConf && modConf.r4TrackingEnabled && modConf.r4TrackingRole) {
+            const roleId = modConf.r4TrackingRole.replace(/[^0-9]/g, '');
+            if (interaction.member && interaction.member.roles && interaction.member.roles.cache.has(roleId)) {
+                const weekId = getISOWeekString();
+                await db.run(
+                    `INSERT INTO r4_tracking (userId, guildId, weekId, messages, ads, excused) 
+                     VALUES (?, ?, ?, 0, ?, 0)
+                     ON CONFLICT(userId, guildId, weekId) DO UPDATE SET ads = ads + ?`,
+                    [interaction.user.id, interaction.guild.id, weekId, amount, amount]
+                );
+            }
+        }
+
+        const updatedStat = await db.get(`SELECT value FROM global_stats WHERE statName = 'total_ads_globales'`);
+
+        const oldTotal = updatedStat.value - amount;
+        const newTotal = updatedStat.value;
+        const threshold = 1000;
+        const crossedThreshold = Math.floor(oldTotal / threshold) < Math.floor(newTotal / threshold);
+
+        if (crossedThreshold) {
+            await interaction.editReply({ content: `✅ Successfully registered ${amount} ads!\n\n🎉 **YOU JUST CROSSED THE GLOBAL MILESTONE OF ${Math.floor(newTotal/threshold)*1000} ADS!** 🎉\nWe require evidence. Please check your Direct Messages.` });
+            
+            try {
+                const dmChannel = await interaction.user.createDM();
+                await dmChannel.send("Congratulations on crossing the 1000 global ads milestone! 🚀\nPlease **attach or forward a photo/screenshot** of the ad you uploaded here as evidence.");
+                
+                const filter = m => m.author.id === interaction.user.id && m.attachments.size > 0;
+                const collector = dmChannel.createMessageCollector({ filter, max: 1, time: 300000 });
+                
+                collector.on('collect', async m => {
+                    const evidenceUrl = m.attachments.first().url;
+                    await dmChannel.send("✅ Evidence received and sent to Leadership! Thank you.");
+                    
+                    const leadershipChannelId = config.leadershipChannelId;
+                    if (!leadershipChannelId) {
+                        return interaction.client.users.cache.get(interaction.user.id).send('Audit received, but no Leadership channel is configured.');
+                    }
+                    
+                    const channel = interaction.guild.channels.cache.get(leadershipChannelId);
+                    if (channel) {
+                        await channel.send({
+                            content: `📢 **Global 1000-Ads Milestone Audit**\nUser: <@${interaction.user.id}>\nAd Evidence:`,
+                            files: [evidenceUrl]
+                        });
+                    }
+                });
+
+                collector.on('end', (collected, reason) => {
+                    if (reason === 'time') {
+                        dmChannel.send("⚠️ Wait time for evidence has expired.");
+                    }
+                });
+
+            } catch (dmError) {
+               console.error('Could not send DM:', dmError);
+            }
+
+        } else {
+            await interaction.editReply({ content: `✅ Successfully registered ${amount} ads! Global estimated total: ${newTotal}.` });
+        }
+
+        // --- UPDATE LEADERBOARD IF TRIGGERED FROM PANEL ---
+        if (interaction.isModalSubmit() && interaction.message) {
+            try {
+                const msgToUpdate = await interaction.channel.messages.fetch(interaction.message.id);
+                if (msgToUpdate && msgToUpdate.embeds.length >= 2) {
+                    const topUsers = await db.all(`SELECT userId, SUM(ads) as totalAds FROM r4_tracking WHERE guildId = ? GROUP BY userId ORDER BY totalAds DESC LIMIT 10`, [interaction.guild.id]);
+                    
+                    const leaderboardEmbed = new EmbedBuilder()
+                      .setTitle('🏆 Top Ad Publishers')
+                      .setColor('Gold');
+                      
+                    if (!topUsers || topUsers.length === 0) {
+                        leaderboardEmbed.setDescription('No ads have been registered yet. Be the first!');
+                    } else {
+                        let desc = '';
+                        topUsers.forEach((u, i) => {
+                            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🏅';
+                            desc += `${medal} **<@${u.userId}>**: ${u.totalAds} Ads\n`;
+                        });
+                        leaderboardEmbed.setDescription(desc);
+                    }
+
+                    // Keep the second embed (the panel instructions) as is
+                    const panelEmbed = msgToUpdate.embeds[1];
+                    
+                    const imagePath = path.join(process.cwd(), 'zenith_bg - Copy.png');
+                    const attachment = new AttachmentBuilder(imagePath, { name: 'zenith_bg.png' });
+                    leaderboardEmbed.setImage('attachment://zenith_bg.png');
+                    
+                    await msgToUpdate.edit({ embeds: [leaderboardEmbed, panelEmbed], files: [attachment] });
+                }
+            } catch (err) {
+                console.error('Failed to update leaderboard panel:', err);
+            }
+        }
+
+    } catch (error) {
+        console.error(error);
+        await interaction.editReply({ content: '❌ An error occurred processing your entry.' });
+    }
+}
+
+module.exports = {
+  processAdsSubmission,
+  data: new SlashCommandBuilder()
+    .setName('add-ads')
+    .setDescription('Logs a number of ads you have generated and sends them to Google Sheets.')
+    .addIntegerOption(option => 
+      option.setName('amount')
+        .setDescription('The amount of ads to log.')
+        .setRequired(true)
+        .setMinValue(1)
+    ),
+  async execute(interaction) {
+    const amount = interaction.options.getInteger('amount');
+    await interaction.deferReply({ ephemeral: true });
+    await processAdsSubmission(interaction, amount);
+  }
+};

@@ -1,0 +1,71 @@
+const { EmbedBuilder } = require('discord.js');
+const { getDb } = require('../config/database');
+
+module.exports = {
+    name: 'guildMemberAdd',
+    async execute(member, client) {
+        const db = await getDb();
+        const conf = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [member.guild.id]);
+
+        if (conf) {
+            // --- 1. Welcome Message ---
+            if (conf.welcomeEnabled && conf.welcomeChannel) {
+                const channel = member.guild.channels.cache.get(conf.welcomeChannel);
+                if (channel) {
+                    let title = conf.welcomeEmbedTitle || `Welcome to {server}!`;
+                    let desc = conf.welcomeEmbedDesc || `Hello {user}, we hope you have a great time here.`;
+                    
+                    const pTitle = title.replace('{user}', `<@${member.id}>`)
+                                        .replace('{server}', member.guild.name)
+                                        .replace('{memberCount}', member.guild.memberCount);
+                                        
+                    const pDesc = desc.replace('{user}', `<@${member.id}>`)
+                                      .replace('{server}', member.guild.name)
+                                      .replace('{memberCount}', member.guild.memberCount);
+
+                    const embed = new EmbedBuilder()
+                        .setTitle(pTitle)
+                        .setDescription(pDesc)
+                        .setColor(conf.welcomeColor || '#a855f7')
+                        .setThumbnail(member.user.displayAvatarURL());
+                    channel.send({ content: `<@${member.id}>`, embeds: [embed] }).catch(()=>{});
+                }
+            }
+
+            // --- 2. Auto-Role ---
+            if (conf.autoroleEnabled && conf.autoroleIds) {
+                try {
+                    const rolesIds = JSON.parse(conf.autoroleIds);
+                    for (const roleId of rolesIds) {
+                        const role = member.guild.roles.cache.get(roleId);
+                        if (role) await member.roles.add(role).catch(()=>{});
+                    }
+                } catch(e) { }
+            }
+        }
+
+        // --- 3. Invite Tracker ---
+        try {
+            const newInvites = await member.guild.invites.fetch();
+            const oldInvites = client.invites.get(member.guild.id);
+            
+            if(oldInvites) {
+                const usedInvite = newInvites.find(inv => inv.uses > oldInvites.get(inv.code));
+                
+                if (usedInvite) {
+                    const inviterId = usedInvite.inviter.id;
+                    const db = await getDb();
+                    await db.run(
+                        `INSERT INTO users (userId, invites) VALUES (?, 1)
+                         ON CONFLICT(userId) DO UPDATE SET invites = invites + 1`,
+                        [inviterId]
+                    );
+                    
+                    oldInvites.set(usedInvite.code, usedInvite.uses);
+                }
+            }
+        } catch (e) {
+            console.error('Error tracking invite on guildMemberAdd', e);
+        }
+    }
+};

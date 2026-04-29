@@ -1,0 +1,74 @@
+const { EmbedBuilder } = require('discord.js');
+const { getDb } = require('../config/database');
+
+async function checkGiveaways(client) {
+    try {
+        const db = await getDb();
+        const now = Date.now();
+        // Fetch expired giveaways that are still marked as active
+        const expired = await db.all(`SELECT * FROM giveaways WHERE status = 'active' AND endTime <= ?`, [now]);
+
+        for (const ga of expired) {
+            const guild = client.guilds.cache.get(ga.guildId);
+            if (!guild) continue;
+
+            const channel = guild.channels.cache.get(ga.channelId);
+            if (!channel) continue;
+
+            try {
+                const message = await channel.messages.fetch(ga.id);
+                if (!message) continue;
+
+                // Mark ended in db
+                await db.run(`UPDATE giveaways SET status = 'ended' WHERE id = ?`, [ga.id]);
+
+                const reaction = message.reactions.cache.find(r => r.emoji.name === '🎉');
+                let winners = [];
+
+                if (reaction) {
+                    const users = await reaction.users.fetch();
+                    const validUsers = [];
+                    for (const [userId, user] of users) {
+                        if (user.bot) continue;
+                        
+                        if (ga.requiredRole) {
+                            const member = await guild.members.fetch(userId).catch(() => null);
+                            if (!member || !member.roles.cache.has(ga.requiredRole)) continue;
+                        }
+                        
+                        validUsers.push(user);
+                    }
+                    
+                    // Shuffle and select N
+                    const shuffled = validUsers.sort(() => 0.5 - Math.random());
+                    winners = shuffled.slice(0, ga.winnersCount);
+                }
+
+                // Edit original embed
+                const oldEmbed = message.embeds[0];
+                const newEmbed = EmbedBuilder.from(oldEmbed)
+                    .setTitle(`[ENDED] ${ga.prize}`)
+                    .setDescription(`**Winners:** ${winners.length > 0 ? winners.map(w => `<@${w.id}>`).join(', ') : 'No valid entries.'}\n**Hosted By:** <@${ga.hostedBy}>`)
+                    .setColor('#2b2d31');
+                
+                await message.edit({ embeds: [newEmbed], components: [] });
+
+                // Announce winners
+                if (winners.length > 0) {
+                    await channel.send(`🎉 Congratulations ${winners.map(w => `<@${w.id}>`).join(', ')}! You won the **${ga.prize}**!`);
+                } else {
+                    await channel.send(`🛑 No valid participants entered the **${ga.prize}** giveaway.`);
+                }
+            } catch (e) {
+                console.error(`Error ending giveaway ${ga.id}`, e);
+            }
+        }
+    } catch (e) {
+        console.error('Giveaway checker error', e);
+    }
+}
+
+module.exports = function setupGiveaways(client) {
+    // Check every 30 seconds
+    setInterval(() => checkGiveaways(client), 30000);
+};

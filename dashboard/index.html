@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenith Command Center</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome for standard icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- ============ LOGIN SCREEN ============ -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <h1><i class="fas fa-crown"></i> Project Zenith</h1>
+            <p>Sign in with your Discord account to verify your administrator permissions and access the command center.</p>
+            <button class="z-btn z-btn-discord z-btn-block" onclick="window.location.href='/api/auth/discord'"><i class="fab fa-discord"></i> Log In with Discord</button>
+        </div>
+    </div>
+
+    <!-- ============ GUILD SELECTOR ============ -->
+    <div id="guildScreen" class="guild-selector" style="display:none;">
+        <div class="guild-selector-box">
+            <h1>Select Kingdom</h1>
+            <p>Access the command console for servers where you have Administrative authority.</p>
+            <div id="guildList" class="guild-grid">
+                <p style="color:var(--text-muted); text-align:center; width:100%;">Connecting to Kingdoms...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ DASHBOARD ============ -->
+    <div id="dashboardScreen" class="dashboard-layout" style="display:none;">
+
+        <!-- TOP BAR -->
+        <div class="topbar">
+            <div class="topbar-brand">
+                <h1>ZENITH <span style="font-weight:400; color:var(--text-secondary);">COMMAND</span></h1>
+            </div>
+            <nav class="topbar-nav">
+                <a href="#">Commands</a>
+                <a href="#">Features</a>
+                <a href="#">Discord</a>
+                <a href="#">Dashboard</a>
+            </nav>
+            <div class="topbar-right">
+                <button class="topbar-invite">Invite Zenith</button>
+                <div class="topbar-user">
+                    <div class="topbar-user-avatar" id="topbarAvatar">Z</div>
+                    <span id="topbarUsername">Admin</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <nav class="sidebar">
+            <div class="sidebar-server" id="sidebarServerCard">
+                <div class="sidebar-server-avatar" id="sidebarAvatar"></div>
+                <div class="sidebar-server-info">
+                    <h4 id="sidebarGuildName">Loading...</h4>
+                    <span class="connected-badge">ONLINE</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">COMMUNITY</div>
+            <div class="sidebar-link active" data-page="overview">
+                <i class="fas fa-home link-icon"></i> Home
+            </div>
+            <div class="sidebar-link" data-page="leveling">
+                <i class="fas fa-star link-icon"></i> Leveling System
+            </div>
+            <div class="sidebar-link" data-page="counting">
+                <i class="fas fa-sort-numeric-up-alt link-icon"></i> Infinite Counting
+            </div>
+            <div class="sidebar-link" data-page="welcome">
+                <i class="fas fa-door-open link-icon"></i> Welcome Gates
+            </div>
+
+            <div class="sidebar-section">UTILITIES</div>
+            <div class="sidebar-link" data-page="general">
+                <i class="fas fa-cog link-icon"></i> General Settings
+            </div>
+            <div class="sidebar-link" data-page="tickets">
+                <i class="fas fa-ticket-alt link-icon"></i> Ticket System
+            </div>
+            <div class="sidebar-link" data-page="giveaways">
+                <i class="fas fa-gift link-icon"></i> Giveaway Manager
+            </div>
+            <div class="sidebar-link" data-page="logging">
+                <i class="fas fa-clipboard-list link-icon"></i> Logging
+            </div>
+            <div class="sidebar-link" data-page="serverstats">
+                <i class="fas fa-chart-line link-icon"></i> Server Stats
+            </div>
+            <div class="sidebar-link" data-page="automod">
+                <i class="fas fa-shield-alt link-icon"></i> Auto-Moderation
+            </div>
+            <div class="sidebar-link" data-page="antinuke">
+                <i class="fas fa-radiation link-icon"></i> Anti-Nuke
+            </div>
+            <div class="sidebar-link" data-page="transcripts">
+                <i class="fas fa-scroll link-icon"></i> Transcripts
+            </div>
+            <div class="sidebar-link" data-page="r4tracking">
+                <i class="fas fa-crosshairs link-icon"></i> R4 Tracking
+            </div>
+            <div class="sidebar-link" data-page="autorole">
+                <i class="fas fa-tags link-icon"></i> Auto-Role
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="z-btn z-btn-secondary z-btn-block" onclick="goBackToGuilds()"><i class="fas fa-arrow-left"></i> Switch Kingdom</button>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+
+            <!-- ===== OVERVIEW ===== -->
+            <section id="page-overview" class="page-section active">
+                <div class="page-header" style="border-bottom: 1px solid var(--border-medium); padding-bottom: 24px;">
+                    <h1>Kingdom Overview</h1>
+                    <p>Live statistics and command center diagnostics.</p>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Citizens</div>
+                        <div class="stat-value" id="statHumans">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Automated Bots</div>
+                        <div class="stat-value" id="statBots">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Communications</div>
+                        <div class="stat-value" id="statChannels">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Server Boosts</div>
+                        <div class="stat-value" id="statBoosts">0</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 32px;">
+                    <div class="z-card">
+                        <div class="z-card-header">
+                            <h3><i class="fas fa-paint-brush"></i> Bot Customization</h3>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-palette"></i></div>
+                            <p>Branding tools coming soon...</p>
+                        </div>
+                    </div>
+
+                    <div class="z-card">
+                        <div class="z-card-header">
+                            <h3><i class="fab fa-discord"></i> Discord Community</h3>
+                        </div>
+                        <iframe src="https://discord.com/widget?id=1431859727285092403&theme=dark" width="100%" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== GENERAL SETTINGS ===== -->
+            <section id="page-general" class="page-section">
+                <div class="page-header">
+                    <h1>Core Architecture</h1>
+                    <p>Primary configuration for Zenith integration.</p>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-card-header">
+                        <h3><i class="fas fa-network-wired"></i> Network Configurations</h3>
+                    </div>
+                    <div class="input-row">
+                        <div class="z-input-group">
+                            <label>Welcome Channel ID</label>
+                            <input class="z-input" type="text" id="cfgWelcomeChannel" placeholder="123456789012345678">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Log / Audit Channel ID</label>
+                            <input class="z-input" type="text" id="cfgLogChannel" placeholder="123456789012345678">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="z-input-group">
+                            <label>Leadership Channel ID</label>
+                            <input class="z-input" type="text" id="cfgLeadershipChannel" placeholder="123456789012345678">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Ticket Category ID</label>
+                            <input class="z-input" type="text" id="cfgTicketCategory" placeholder="123456789012345678">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="z-input-group">
+                            <label>Google Sheets ID</label>
+                            <input class="z-input" type="text" id="cfgSpreadsheetId" placeholder="1BxiMvs0XRYFgCE9...">
+                        </div>
+                    </div>
+                    <div style="margin-top:24px;">
+                        <button class="z-btn z-btn-primary" id="btnSaveGeneral" onclick="saveGeneralConfig()"><i class="fas fa-save"></i> Save Architecture</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== WELCOME SYSTEM ===== -->
+            <section id="page-welcome" class="page-section">
+                <div class="page-header">
+                    <h1>Welcome Gates</h1>
+                    <p>Configure automated grand entrances for new members.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--primary-soft);color:var(--gold-500);"><i class="fas fa-door-open"></i></div>
+                        <div>
+                            <h3>Entrance Protocol</h3>
+                            <p>Dispatch a customized missive when a user joins.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleWelcome">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-input-group">
+                        <label>Target Channel ID</label>
+                        <input class="z-input" type="text" id="welcomeChannelCfg" placeholder="Channel ID for welcomes">
+                    </div>
+                    <div class="z-input-group">
+                        <label>Embed Title</label>
+                        <input class="z-input" type="text" id="welcomeTitle" placeholder="e.g. Welcome to {server}...">
+                    </div>
+                    <div class="z-input-group">
+                        <label>Embed Message</label>
+                        <textarea class="z-input" id="welcomeMessage" placeholder="Use {user}, {server}, {memberCount} inside..."></textarea>
+                    </div>
+                    <div class="z-input-group">
+                        <label>Aura Color</label>
+                        <div class="color-picker-wrap">
+                            <input type="color" id="welcomeColor" value="#FFD700">
+                            <span style="color:var(--text-muted); font-size:0.9rem;" id="welcomeColorHex">#FFD700</span>
+                        </div>
+                    </div>
+                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('welcome')"><i class="fas fa-save"></i> Deploy Settings</button>
+                </div>
+            </section>
+
+            <!-- ===== LEVELING ===== -->
+            <section id="page-leveling" class="page-section">
+                <div class="page-header">
+                    <h1>Progression System</h1>
+                    <p>Reward active citizens with XP, ranks, and specialized roles.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-yellow-soft);color:var(--gold-500);"><i class="fas fa-star"></i></div>
+                        <div>
+                            <h3>Experience Engine</h3>
+                            <p>Automate participation tracking via XP algorithms.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleLeveling">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-card-header"><h3>Gain Rates</h3></div>
+                    <div class="input-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                        <div class="z-input-group">
+                            <label>XP Base (Min)</label>
+                            <input class="z-input" type="number" id="xpMin" value="5" min="1" max="100">
+                        </div>
+                        <div class="z-input-group">
+                            <label>XP Ceiling (Max)</label>
+                            <input class="z-input" type="number" id="xpMax" value="15" min="1" max="100">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Delay (Seconds)</label>
+                            <input class="z-input" type="number" id="xpCooldown" value="60" min="0">
+                        </div>
+                    </div>
+                    <div class="z-input-group">
+                        <label>Level-Up Broadcast Channel</label>
+                        <input class="z-input" type="text" id="levelUpChannel" placeholder="Leave empty to use active channel">
+                    </div>
+                </div>
+
+                <!-- Level Milestones -->
+                <div class="z-card">
+                    <div class="z-card-header">
+                        <h3>Rank Milestones</h3>
+                        <button class="z-btn z-btn-secondary" onclick="addLevelMilestone()"><i class="fas fa-plus"></i> Add Rank</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 80px 120px 1fr 1fr 40px; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-medium); margin-bottom:8px;">
+                        <span style="font-size:0.75rem; text-transform:uppercase; color:var(--gold-600); font-weight:700;">Level</span>
+                        <span style="font-size:0.75rem; text-transform:uppercase; color:var(--gold-600); font-weight:700;">Emblem</span>
+                        <span style="font-size:0.75rem; text-transform:uppercase; color:var(--gold-600); font-weight:700;">Title</span>
+                        <span style="font-size:0.75rem; text-transform:uppercase; color:var(--gold-600); font-weight:700;">Role Key</span>
+                        <span></span>
+                    </div>
+                    <div id="levelMilestonesList"></div>
+                </div>
+
+                <!-- VIP Multipliers -->
+                <div class="z-card">
+                    <div class="z-card-header">
+                        <h3>Nobility Multipliers</h3>
+                        <button class="z-btn z-btn-secondary" onclick="addVipMultiplier()"><i class="fas fa-plus"></i> Add Mod</button>
+                    </div>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:16px;">Only the highest tier multiplier applies.</p>
+                    <div id="vipMultipliersList"></div>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-card-header">
+                        <h3><i class="fas fa-file-import"></i> Backup & Recovery</h3>
+                    </div>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">
+                        Restore server leveling progress from external sources. Currently supporting <strong>Lurkr JSON backups</strong>.
+                    </p>
+                    <div id="importStatus" style="margin-bottom:12px; font-size:0.9rem; display:none;"></div>
+                    <input type="file" id="levelBackupInput" accept=".json" style="display:none;" onchange="executeLevelImport(this)">
+                    <button class="z-btn z-btn-secondary" onclick="document.getElementById('levelBackupInput').click()">
+                        <i class="fas fa-upload"></i> Import Lurkr Backup
+                    </button>
+                    <p style="font-size:0.75rem; color:var(--accent-yellow); margin-top:10px; font-style:italic;">
+                        <i class="fas fa-exclamation-triangle"></i> This will overwrite current levels for matching users and reset their XP progress to 0.
+                    </p>
+                </div>
+
+                <button class="z-btn z-btn-primary" onclick="saveModuleConfig('leveling')"><i class="fas fa-save"></i> Save Engine</button>
+            </section>
+
+            <!-- ===== TICKETS ===== -->
+            <section id="page-tickets" class="page-section">
+                <div class="page-header">
+                    <h1>Support Tickets</h1>
+                    <p>Construct dynamic routing panels for citizen requests.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--primary-soft);color:var(--gold-500);"><i class="fas fa-ticket-alt"></i></div>
+                        <div>
+                            <h3>Ticket Dispatch</h3>
+                            <p>Advanced multi-select support infrastructure.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleTickets" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card" style="margin-bottom:24px;">
+                    <div class="z-card-header">
+                        <h3>Global Ticket Settings</h3>
+                    </div>
+                    <div class="input-grid">
+                        <div class="z-input-group">
+                            <label>Concurrency Limit</label>
+                            <input class="z-input" type="number" id="ticketsMaxActive" value="2" min="1" max="10">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Transcript Archive Channel</label>
+                            <input class="z-input" type="text" id="ticketsTranscriptChannel" placeholder="Optional archival ID">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Default Category ID</label>
+                            <input class="z-input" type="text" id="ticketCategoryId" placeholder="Empty for top-level">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Admin Review Channel ID</label>
+                            <input class="z-input" type="text" id="ticketsApprovalChannel" placeholder="Enables approval step">
+                        </div>
+                    </div>
+                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('tickets')"><i class="fas fa-save"></i> Save Core</button>
+                </div>
+
+                <!-- Ticket Builder -->
+                <div class="ticket-builder-grid">
+                    <div>
+                        <div class="z-card">
+                            <div class="z-card-header">
+                                <h3>Panel Architect</h3>
+                                <span style="background:var(--gold-800); color:#fff; font-size:0.7rem; padding:4px 8px; border-radius:4px; font-weight:700;">NEW</span>
+                            </div>
+                            <div class="input-grid">
+                                <div class="z-input-group">
+                                    <label>Deployment Channel</label>
+                                    <input class="z-input" type="text" id="panelChannelId" placeholder="Channel ID" oninput="updatePanelPreview()">
+                                </div>
+                                <div class="z-input-group">
+                                    <label>Panel Header</label>
+                                    <input class="z-input" type="text" id="panelTitle" placeholder="Command Support" oninput="updatePanelPreview()">
+                                </div>
+                                <div class="z-input-group">
+                                    <label>Header Emoji</label>
+                                    <input class="z-input" type="text" id="panelEmoji" placeholder="e.g. 🛠️" oninput="updatePanelPreview()">
+                                </div>
+                            </div>
+                            <div class="input-row">
+                                <div class="z-input-group">
+                                    <label>Directives</label>
+                                    <textarea class="z-input" id="panelDescription" placeholder="Select your inquiry path..." oninput="updatePanelPreview()"></textarea>
+                                </div>
+                                <div class="z-input-group">
+                                    <label>Directive Emoji</label>
+                                    <input class="z-input" type="text" id="panelDescEmoji" placeholder="e.g. 📑" oninput="updatePanelPreview()">
+                                </div>
+                            </div>
+                            <div class="z-input-group">
+                                <label>Glow Color</label>
+                                <div class="color-picker-wrap">
+                                    <input type="color" id="panelColor" value="#FFD700" oninput="updatePanelPreview();document.getElementById('panelColorHex').textContent=this.value;">
+                                    <span style="color:var(--text-muted); font-size:0.9rem;" id="panelColorHex">#FFD700</span>
+                                </div>
+                            </div>
+
+                            <div style="margin-top:24px; border-top:1px solid var(--border-medium); padding-top:24px;">
+                                <div class="z-card-header" style="margin-bottom:12px;">
+                                    <h3>Routing Modules</h3>
+                                </div>
+                                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:16px;">Create dropdowns or button arrays (Limit: 5 rows).</p>
+                                <div id="dropdownsContainer" style="margin-bottom:16px;"></div>
+                                <div style="display:flex; gap:12px; margin-top:16px;">
+                                    <button class="z-btn z-btn-secondary" style="flex:1;" onclick="addButtonRow()"><i class="fas fa-plus"></i> Button Matrix</button>
+                                    <button class="z-btn z-btn-secondary" style="flex:1;" onclick="addDropdown()"><i class="fas fa-plus"></i> Selection Menu</button>
+                                </div>
+                            </div>
+
+                            <div style="margin-top:30px; border-top:1px solid var(--border-medium); padding-top:24px;">
+                            <div style="margin-top:30px; border-top:1px solid var(--border-medium); padding-top:24px; display:flex; gap:12px;">
+                                <button class="z-btn z-btn-secondary" style="flex:1;" onclick="clearPanelForm()"><i class="fas fa-undo"></i> Reset Form</button>
+                                <button class="z-btn z-btn-primary" style="flex:2;" onclick="savePanel()"><i class="fas fa-satellite-dish"></i> Compile & Deploy Panel</button>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Discord Preview -->
+                    <div style="position:sticky; top:100px;">
+                        <div class="z-card" style="background:#2b2d31; border-color:#1e1f22; padding:20px;">
+                            <h4 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:#949ba4; margin-bottom:16px; font-family:'Inter',sans-serif;">Discord Simulator</h4>
+                            <div id="discordPreview" style="border-radius:4px; overflow:hidden;">
+                                <div style="display:flex;">
+                                    <div id="previewColorBar" style="width:4px; border-radius:3px 0 0 3px; background:#FFD700; flex-shrink:0;"></div>
+                                    <div style="background:#2b2d31; border:1px solid #1e1f22; border-left:none; border-radius:0 4px 4px 0; padding:16px; flex:1;">
+                                        <div id="previewTitle" style="font-weight:700; font-size:1rem; color:#f2f3f5; margin-bottom:8px;">Command Support</div>
+                                        <div id="previewDesc" style="font-size:0.85rem; color:#dbdee1; line-height:1.5;">Select your inquiry path...</div>
+                                    </div>
+                                </div>
+                                <div id="previewMenus" style="margin-top:10px;">
+                                    <div style="background:#1e1f22; border:1px solid #3f4147; border-radius:4px; padding:10px 14px; font-size:0.85rem; color:#949ba4;">
+                                        Select sequence...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Panels -->
+                <div class="z-card" style="margin-top:32px;">
+                    <div class="z-card-header">
+                        <h3>Deployed Architecture</h3>
+                    </div>
+                    <div id="panelsList">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-server"></i></div>
+                            <p>No panels deployed yet.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transcripts -->
+                <div class="z-card" style="margin-top:32px;">
+                    <div class="z-card-header">
+                        <h3>Archival Transcripts</h3>
+                    </div>
+                    <div id="transcriptsList">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-archive"></i></div>
+                            <p>No records found in the archive.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== AUTO-MODERATION ===== -->
+            <section id="page-automod" class="page-section">
+                <div class="page-header">
+                    <h1>Security Protocol</h1>
+                    <p>Enforce order via automated suppression logic.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-red-soft);color:var(--accent-red);"><i class="fas fa-shield-alt"></i></div>
+                        <div>
+                            <h3>Moderation Engine</h3>
+                            <p>Protect the realm autonomously.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleAutomod">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Rapid-Fire Protection</h4><p>Neutralize message floods.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="automodSpam"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Hyperlink Suppression</h4><p>Prohibit unsanctioned gateways.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="automodLinks"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Mass Echo Filter</h4><p>Restrict excessive @ summons.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="automodMentions"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Volume Limiter</h4><p>Prevent ALL-CAPS screaming.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="automodCaps"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Censorship Grid</h4><p>Filter prohibited dialect.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="automodWords"><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-input-group">
+                        <label>Contraband Lexicon (Comma separated)</label>
+                        <textarea class="z-input" id="automodWordList" placeholder="e.g. slur1, slur2, threat"></textarea>
+                    </div>
+                    <div class="z-input-group">
+                        <label>Summon Ceiling</label>
+                        <input class="z-input" type="number" id="automodMaxMentions" value="5" min="1" max="50">
+                    </div>
+                    <div class="z-input-group">
+                        <label>Incident Log Array</label>
+                        <input class="z-input" type="text" id="automodLogChannel" placeholder="Log channel ID for security breaches">
+                    </div>
+                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('automod')"><i class="fas fa-save"></i> Save Security Protocol</button>
+                </div>
+            </section>
+
+            <!-- ===== LOGGING ===== -->
+            <section id="page-logging" class="page-section">
+                <div class="page-header">
+                    <h1>Surveillance Matrix</h1>
+                    <p>Monitor all kingdom modifications and incidents.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-cyan-soft);color:var(--accent-cyan);"><i class="fas fa-clipboard-list"></i></div>
+                        <div>
+                            <h3>Event Tracker</h3>
+                            <p>Maintain persistent records of structural changes.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleLogging">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-input-group">
+                        <label>Master Log Terminal</label>
+                        <input class="z-input" type="text" id="loggingChannel" placeholder="Channel ID">
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Data Amendments</h4><p>Log message modifications.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logEdits" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Data Erasures</h4><p>Log deleted transmissions.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logDeletes" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Immigration Traffic</h4><p>Log join and exit occurrences.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logMembers" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Rank Revisions</h4><p>Log role adjustments.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logRoles"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Sector Edits</h4><p>Log channel structural shifts.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logChannels"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Excommunications</h4><p>Log ban and kick enforcement.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logBans" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('logging')"><i class="fas fa-save"></i> Synchronize Logs</button>
+                </div>
+            </section>
+
+            <!-- ===== AUTO-ROLE ===== -->
+            <section id="page-autorole" class="page-section">
+                <div class="page-header">
+                    <h1>Auto Assignment</h1>
+                    <p>Dictate immediate provisions for newborn citizens.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-pink-soft);color:var(--accent-pink);"><i class="fas fa-tags"></i></div>
+                        <div>
+                            <h3>Identity Provision</h3>
+                            <p>Automatically distribute roles upon entry.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleAutorole">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-card-header">
+                        <h3>Automated Roles</h3>
+                        <button class="z-btn z-btn-secondary" onclick="addAutoRole()"><i class="fas fa-plus"></i> Inject Role</button>
+                    </div>
+                    <div id="autoRoleList">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-tag"></i></div>
+                            <p>No identities queued. Bind an ID below.</p>
+                        </div>
+                    </div>
+                    <div class="z-input-group" style="margin-top:24px;">
+                        <label>Role Key to Dispatch</label>
+                        <input class="z-input" type="text" id="autoRoleInput" placeholder="Role ID...">
+                    </div>
+                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('autorole')"><i class="fas fa-save"></i> Save Protocols</button>
+                </div>
+            </section>
+
+            <!-- ===== COUNTING ===== -->
+            <section id="page-counting" class="page-section">
+                <div class="page-header">
+                    <h1>Counting Engine</h1>
+                    <p>Initiate community coherence via incremental chains.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-cyan-soft);color:var(--accent-cyan);"><i class="fas fa-sort-numeric-up"></i></div>
+                        <div>
+                            <h3>Sequence Reactor</h3>
+                            <p>Collaborative number stacking. Any error detonates the reactor.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleCounting">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="input-row">
+                        <div class="z-input-group">
+                            <label>Reactor Vector</label>
+                            <input class="z-input" type="text" id="countingChannel" placeholder="Channel ID">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Stack Position</label>
+                            <input class="z-input" type="number" id="countingCurrent" value="0" min="0">
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Dual-Step Tolerance</h4><p>Allow users to step twice consecutively.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="countingSameUser"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Overload Reset</h4><p>Destroy the stack on miscalculation.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="countingReset" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Allow Math</h4><p>Evaluate mathematical equations (e.g. 2+2).</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="countingMath"><span class="toggle-slider"></span></label>
+                    </div>
+                    <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('counting')"><i class="fas fa-save"></i> Lock Sequence</button>
+                </div>
+            </section>
+
+            <!-- ===== SERVER STATS ===== -->
+            <section id="page-serverstats" class="page-section">
+                <div class="page-header">
+                    <h1>Public Statistics</h1>
+                    <p>Broadcast live kingdom metrics via locked voice channels.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-green-soft);color:var(--accent-green);"><i class="fas fa-chart-bar"></i></div>
+                        <div>
+                            <h3>Telemetry Towers</h3>
+                            <p>Display real-time internal census data.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleServerStats">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Total Census</h4><p>Show overall capacity limits.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="statsTotalMembers" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Active Personnel</h4><p>Show connected entities.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="statsOnline"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Drone Workforce</h4><p>Track automated bots.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="statsBots"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Infrastructure Count</h4><p>Count physical nodes (channels).</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="statsChannels"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="z-input-group" style="margin-top:24px;">
+                        <label>Telemetry Sector (Category ID)</label>
+                        <input class="z-input" type="text" id="statsCategoryId" placeholder="Where the channels will be constructed">
+                    </div>
+                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('serverstats')"><i class="fas fa-save"></i> Erect Towers</button>
+                </div>
+            </section>
+
+            <!-- ===== ANTI-NUKE ===== -->
+            <section id="page-antinuke" class="page-section">
+                <div class="page-header">
+                    <h1>Anti-Nuke Vault</h1>
+                    <p>Drastic emergency lockdown procedures representing maximal defense.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-red-soft);color:var(--accent-red);"><i class="fas fa-radiation-alt"></i></div>
+                        <div>
+                            <h3>Doomsday Shielding</h3>
+                            <p>Autonomously rip permissions on hostile thresholds.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleAntinuke">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Purge Deflection</h4><p>Detect mass exile attacks.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="antinukeBan" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Structural Deflection</h4><p>Detect mass channel erasure.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="antinukeChannel" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Identity Deflection</h4><p>Detect mass role deletion.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="antinukeRole" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Webhook Saturation</h4><p>Detect hostile API tunneling.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="antinukeWebhook"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="input-row" style="margin-top:24px;">
+                        <div class="z-input-group">
+                            <label>Panic Threshold (Per 10s)</label>
+                            <input class="z-input" type="number" id="antinukeThreshold" value="5" min="2" max="20">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Diplomatic Immunity (IDs, comma-separated)</label>
+                            <input class="z-input" type="text" id="antinukeWhitelist" placeholder="Override whitelist">
+                        </div>
+                    </div>
+                    <button class="z-btn z-btn-danger z-btn-block" onclick="saveModuleConfig('antinuke')" style="margin-top:10px;"><i class="fas fa-lock"></i> Arm Defense Grid</button>
+                </div>
+            </section>
+
+            <!-- NEW PAGES PLACEHOLDERS -->
+            <section id="page-giveaways" class="page-section">
+                <div class="page-header">
+                    <h1>Giveaway Logistics</h1>
+                    <p>Initialize and dispense treasury rewards.</p>
+                </div>
+            <!-- ===== TRANSCRIPTS ===== -->
+            <section id="page-transcripts" class="page-section">
+                <div class="page-header">
+                    <h1>Ticket Transcripts</h1>
+                    <p>Access historical communication logs for all resolved tickets.</p>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3><i class="fas fa-history"></i> Log Archives</h3>
+                        <button class="z-btn z-btn-secondary z-btn-sm" onclick="fetchTranscripts()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="z-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticket ID</th>
+                                    <th>Owner ID</th>
+                                    <th>Closed Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transcriptsTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align:center; padding: 40px; color:var(--text-muted);">No logs found yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== R4 TRACKING ===== -->
+            <section id="page-r4tracking" class="page-section">
+                <div class="page-header">
+                    <h1>R4 Tracking Protocol</h1>
+                    <p>Monitor quota completions for officers (Ads and Messages).</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-purple-soft);color:var(--accent-purple);"><i class="fas fa-crosshairs"></i></div>
+                        <div>
+                            <h3>R4 Tracker</h3>
+                            <p>Track weekly requirements and excuse specific members.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleR4Tracking">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-card-header">
+                        <h3>Tracker Configuration</h3>
+                    </div>
+                    <div class="input-row">
+                        <div class="z-input-group">
+                            <label>Target Role ID (Officers)</label>
+                            <input class="z-input" type="text" id="r4TrackingRole" placeholder="Role ID to track">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="z-input-group">
+                            <label>Weekly Ads Quota</label>
+                            <input class="z-input" type="number" id="r4TrackingAdQuota" value="40" min="1">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Weekly Messages Quota</label>
+                            <input class="z-input" type="number" id="r4TrackingMsgQuota" value="245" min="1">
+                        </div>
+                    </div>
+                    <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('r4tracking')"><i class="fas fa-save"></i> Save Target Limits</button>
+                </div>
+
+                <div class="z-card" style="margin-top:32px;">
+                    <div class="z-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3>Weekly Leaderboard</h3>
+                        <button class="z-btn z-btn-secondary z-btn-sm" onclick="fetchR4Tracking()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="z-table">
+                            <thead>
+                                <tr>
+                                    <th>User ID</th>
+                                    <th>Week</th>
+                                    <th>Ads</th>
+                                    <th>Messages</th>
+                                    <th>Progress</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="r4TrackingTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding: 40px; color:var(--text-muted);">Loading R4 tracking data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transcript Viewer Overlay -->
+            <div id="transcriptOverlay" class="modal-overlay" style="display:none; z-index: 2000;">
+                <div class="modal-content" style="max-width: 900px; height: 80vh; display: flex; flex-direction: column;">
+                    <div class="modal-header">
+                        <h2 id="viewerTicketTitle">Transcript Viewer</h2>
+                        <button class="modal-close" onclick="closeTranscript()">&times;</button>
+                    </div>
+                    <div id="discordChatContainer" class="discord-chat-viewer" style="flex:1; overflow-y:auto; background:#313338; padding:20px; border-radius: 0 0 8px 8px;">
+                        <!-- Styled chat messages go here -->
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end main-content -->
+
+    </div>
+
+    <!-- MODAL FOR PANEL COMPONENT SETTINGS -->
+    <div id="optionSettingsModal" class="modal-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:2000; align-items:center; justify-content:center;">
+        <div class="z-card" style="width:100%; max-width:600px; max-height:90vh; overflow-y:auto; border:1px solid var(--border-medium);">
+            <div class="z-card-header">
+                <h3>Option Matrix <span id="modalOptionTitle" style="color:var(--gold-500);"></span></h3>
+                <button style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;" onclick="closeModal('optionSettingsModal')">&times;</button>
+            </div>
+            
+            <div class="input-row">
+                <div class="z-input-group">
+                    <label>Resolution Action</label>
+                    <select class="z-input" id="modalSystemType">
+                        <option value="ticket">Spin up Ticket Channel</option>
+                        <option value="role">Dispatch Role</option>
+                        <option value="verification">Verification Gateway</option>
+                    </select>
+                </div>
+                <div class="z-input-group">
+                    <label>Channel Node Prefix</label>
+                    <input class="z-input" type="text" id="modalChannelPrefix" placeholder="Default: ticket">
+                </div>
+                <div class="z-input-group">
+                    <label>Parent Category ID</label>
+                    <input class="z-input" type="text" id="modalCategoryId" placeholder="Overrides global default">
+                </div>
+                <div class="z-input-group">
+                    <label>Option Emoji</label>
+                    <input class="z-input" type="text" id="modalOptionEmoji" placeholder="e.g. 🎫 or <:id>">
+                </div>
+            </div>
+
+            <div class="input-row">
+                <div class="z-input-group">
+                    <label>Assigned Guard (Role IDs, comma-seperated)</label>
+                    <input class="z-input" type="text" id="modalStaffRoles" placeholder="Leave empty for hierarchy">
+                </div>
+                <div class="z-input-group">
+                    <label>Pings on Spin-up</label>
+                    <input class="z-input" type="text" id="modalPingRoles" placeholder="Role IDs to @ping">
+                </div>
+            </div>
+
+            <div class="z-input-group">
+                <label>Welcome Description (Inside Ticket)</label>
+                <textarea class="z-input" id="modalEmbedDesc" placeholder="Initial prompt inside the created channel..."></textarea>
+            </div>
+
+            <div class="z-card-header" style="margin-top:20px; border-top:1px solid var(--border-subtle); padding-top:20px;">
+                <h3>Pre-Flight Quiz</h3>
+                <button class="z-btn z-btn-secondary" onclick="addModalQuestion()" style="font-size:0.8rem; padding:8px 16px;"><i class="fas fa-plus"></i> Add Mod</button>
+            </div>
+            
+            <div class="z-input-group">
+                <label>Question Delivery Method</label>
+                <select class="z-input" id="modalQuestionDelivery">
+                    <option value="modal">Discord Modal (On Button Click)</option>
+                    <option value="dm">Direct Messages (DMs)</option>
+                    <option value="ticket">Inside Ticket Channel</option>
+                </select>
+            </div>
+
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">Questions asked before/during channeling.</p>
+            <div id="modalQuestionsContainer" style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;"></div>
+
+            <button class="z-btn z-btn-primary z-btn-block" onclick="saveOptionSettings()"><i class="fas fa-check"></i> Validate Payload</button>
+        </div>
+    </div>
+
+    <!-- Injecting simple JS functionality to handle modals -->
+    <script>
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
