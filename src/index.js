@@ -31,6 +31,26 @@ client.activeApplications = new Collection();
 // Endpoints de API Local
 app.use(express.json()); // Necesario para parsear el req.body del POST config
 
+// Health Check endpoint for UptimeRobot / healthchecks.io
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: Date.now(),
+        bot: client.isReady() ? 'connected' : 'disconnected'
+    });
+});
+
+// Ping healthchecks.io on interval (if configured)
+if (process.env.HEALTHCHECKS_URL) {
+    setInterval(async () => {
+        try {
+            const axios = require('axios');
+            await axios.get(process.env.HEALTHCHECKS_URL);
+        } catch (e) { /* silent */ }
+    }, 5 * 60 * 1000); // Every 5 minutes
+}
+
 app.get('/api/stats', async (req, res) => {
     try {
         const db = await getDb();
@@ -389,7 +409,7 @@ app.post('/api/modules/:guildId', async (req, res) => {
         
         // Build dynamic upsert
         const fields = [
-            'welcomeEnabled', 'welcomeChannel', 'welcomeEmbedTitle', 'welcomeEmbedDesc', 'welcomeColor',
+            'welcomeEnabled', 'welcomeChannel', 'welcomeEmbedTitle', 'welcomeEmbedDesc', 'welcomeColor', 'welcomeImage', 'welcomeUseEmbed',
             'levelingEnabled', 'xpMin', 'xpMax', 'xpCooldown', 'levelUpChannel', 'roleRewards',
             'ticketsEnabled', 'ticketsMaxActive', 'ticketsTranscriptChannel', 'ticketCategoryId', 'ticketsApprovalChannel',
             'automodEnabled', 'automodSpam', 'automodLinks', 'automodMentions', 'automodCaps', 'automodWords',

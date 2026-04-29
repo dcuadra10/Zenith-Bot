@@ -247,7 +247,15 @@
                             <span style="color:var(--text-muted); font-size:0.9rem;" id="welcomeColorHex">#FFD700</span>
                         </div>
                     </div>
-                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('welcome')"><i class="fas fa-save"></i> Deploy Settings</button>
+                    <div class="z-input-group">
+                        <label>Image URL (Optional)</label>
+                        <input class="z-input" type="text" id="welcomeImage" placeholder="https://example.com/welcome-banner.png">
+                    </div>
+                    <div class="toggle-row" style="margin-top:12px;">
+                        <div class="toggle-info"><h4>Use Rich Embed</h4><p>When off, sends a plain text message with image attached (Component V2 style).</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="welcomeUseEmbed" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('welcome')" style="margin-top:16px;"><i class="fas fa-save"></i> Deploy Settings</button>
                 </div>
             </section>
 
@@ -976,6 +984,15 @@
             <div class="z-input-group">
                 <label>Welcome Description (Inside Ticket)</label>
                 <textarea class="z-input" id="modalEmbedDesc" placeholder="Initial prompt inside the created channel..."></textarea>
+            </div>
+
+            <div class="z-input-group">
+                <label>Image URL (Optional)</label>
+                <input class="z-input" type="text" id="modalImageUrl" placeholder="https://example.com/ticket-banner.png">
+            </div>
+            <div class="toggle-row" style="margin-top:4px; margin-bottom:12px;">
+                <div class="toggle-info"><h4>Use Rich Embed</h4><p>When off, sends plain text with image attached (Component V2).</p></div>
+                <label class="toggle-switch"><input type="checkbox" id="modalUseEmbed" checked><span class="toggle-slider"></span></label>
             </div>
 
             <div class="z-card-header" style="margin-top:20px; border-top:1px solid var(--border-subtle); padding-top:20px;">

@@ -3,4 +3,4 @@ node_modules/
 database.sqlite
 scratch/
 *.mp4
-*.json
+lurkr_levels*.json

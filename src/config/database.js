@@ -133,6 +133,8 @@ async function getDb() {
                 welcomeEmbedTitle TEXT,
                 welcomeEmbedDesc TEXT,
                 welcomeColor TEXT DEFAULT '#6366f1',
+                welcomeImage TEXT,
+                welcomeUseEmbed INTEGER DEFAULT 1,
                 -- Leveling
                 levelingEnabled INTEGER DEFAULT 0,
                 xpMin INTEGER DEFAULT 5,
@@ -199,7 +201,7 @@ async function getDb() {
             );
         `);
         
-        const ticketCols = ['ticketsMaxActive INTEGER DEFAULT 2', 'ticketsTranscriptChannel TEXT', 'countingMath INTEGER DEFAULT 0', 'countingLastUser TEXT', 'ticketCategoryId TEXT', 'ticketsApprovalChannel TEXT', 'r4TrackingEnabled INTEGER DEFAULT 0', 'r4TrackingRole TEXT', 'r4TrackingAdQuota INTEGER DEFAULT 40', 'r4TrackingMsgQuota INTEGER DEFAULT 245'];
+        const ticketCols = ['ticketsMaxActive INTEGER DEFAULT 2', 'ticketsTranscriptChannel TEXT', 'countingMath INTEGER DEFAULT 0', 'countingLastUser TEXT', 'ticketCategoryId TEXT', 'ticketsApprovalChannel TEXT', 'r4TrackingEnabled INTEGER DEFAULT 0', 'r4TrackingRole TEXT', 'r4TrackingAdQuota INTEGER DEFAULT 40', 'r4TrackingMsgQuota INTEGER DEFAULT 245', 'welcomeImage TEXT', 'welcomeUseEmbed INTEGER DEFAULT 1'];
         for (const col of ticketCols) {
             try { await dbInstance.exec(`ALTER TABLE module_configs ADD COLUMN ${col}`); } catch (e) {}
         }

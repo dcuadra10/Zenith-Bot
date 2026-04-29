@@ -206,6 +206,8 @@ function loadModuleToggles(mods) {
         const hex = document.getElementById('welcomeColorHex');
         if (hex) hex.textContent = mods.welcomeColor;
     }
+    setVal('welcomeImage', mods.welcomeImage);
+    setCheck('welcomeUseEmbed', mods.welcomeUseEmbed === undefined || mods.welcomeUseEmbed === null ? true : !!mods.welcomeUseEmbed);
     // Leveling
     setCheck('toggleLeveling', mods.levelingEnabled);
     setVal('xpMin', mods.xpMin);
@@ -329,6 +331,8 @@ async function saveModuleConfig(moduleName) {
         welcomeEmbedTitle: getVal('welcomeTitle'),
         welcomeEmbedDesc: getVal('welcomeMessage'),
         welcomeColor: getVal('welcomeColor'),
+        welcomeImage: getVal('welcomeImage'),
+        welcomeUseEmbed: getCheck('welcomeUseEmbed'),
         // Leveling
         levelingEnabled: getCheck('toggleLeveling'),
         xpMin: parseInt(getVal('xpMin')) || 5,
@@ -823,6 +827,8 @@ function openOptionSettings(dIdx, oIdx, isBtn = false) {
     setVal('modalOptionEmoji', opt.emoji || '');
     setVal('modalEmbedDesc', opt.embedDescription || 'Please wait, staff will be with you shortly.');
     setVal('modalQuestionDelivery', opt.questionDelivery || 'modal');
+    setVal('modalImageUrl', opt.imageUrl || '');
+    setCheck('modalUseEmbed', opt.useEmbed === undefined || opt.useEmbed === null ? true : !!opt.useEmbed);
     
     renderModalQuestions();
     
@@ -916,6 +922,8 @@ function saveOptionSettings() {
     opt.emoji = getVal('modalOptionEmoji');
     opt.embedDescription = getVal('modalEmbedDesc');
     opt.questionDelivery = getVal('modalQuestionDelivery');
+    opt.imageUrl = getVal('modalImageUrl');
+    opt.useEmbed = document.getElementById('modalUseEmbed').checked ? 1 : 0;
     
     closeModal('optionSettingsModal');
     renderDropdowns();
