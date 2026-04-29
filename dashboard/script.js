@@ -210,13 +210,13 @@ function loadModuleToggles(mods) {
     setCheck('welcomeUseEmbed', mods.welcomeUseEmbed === undefined || mods.welcomeUseEmbed === null ? true : !!mods.welcomeUseEmbed);
     // Leveling
     setCheck('toggleLeveling', mods.levelingEnabled);
-    setVal('xpMin', mods.xpMin);
-    setVal('xpMax', mods.xpMax);
-    setVal('xpCooldown', mods.xpCooldown);
+    setVal('xpMin', mods.xpMin ?? 5);
+    setVal('xpMax', mods.xpMax ?? 15);
+    setVal('xpCooldown', mods.xpCooldown ?? 60);
     setVal('levelUpChannel', mods.levelUpChannel);
     // Tickets
     setCheck('toggleTickets', mods.ticketsEnabled);
-    if(mods.ticketsMaxActive) setVal('ticketsMaxActive', mods.ticketsMaxActive);
+    if(mods.ticketsMaxActive) setVal('ticketsMaxActive', mods.ticketsMaxActive ?? 2);
     setVal('ticketsTranscriptChannel', mods.ticketsTranscriptChannel);
     setVal('ticketCategoryId', mods.ticketCategoryId);
     setVal('ticketsApprovalChannel', mods.ticketsApprovalChannel);
@@ -228,7 +228,7 @@ function loadModuleToggles(mods) {
     setCheck('automodCaps', mods.automodCaps);
     setCheck('automodWords', mods.automodWords);
     setVal('automodWordList', mods.automodWordList);
-    setVal('automodMaxMentions', mods.automodMaxMentions);
+    setVal('automodMaxMentions', mods.automodMaxMentions ?? 5);
     setVal('automodLogChannel', mods.automodLogChannel);
     // Logging
     setCheck('toggleLogging', mods.loggingEnabled);
@@ -264,13 +264,13 @@ function loadModuleToggles(mods) {
     setCheck('antinukeChannel', mods.antinukeChannel);
     setCheck('antinukeRole', mods.antinukeRole);
     setCheck('antinukeWebhook', mods.antinukeWebhook);
-    setVal('antinukeThreshold', mods.antinukeThreshold);
+    setVal('antinukeThreshold', mods.antinukeThreshold ?? 5);
     setVal('antinukeWhitelist', mods.antinukeWhitelist);
     // R4 Tracking
     setCheck('toggleR4Tracking', mods.r4TrackingEnabled);
     setVal('r4TrackingRole', mods.r4TrackingRole);
-    setVal('r4TrackingAdQuota', mods.r4TrackingAdQuota);
-    setVal('r4TrackingMsgQuota', mods.r4TrackingMsgQuota);
+    setVal('r4TrackingAdQuota', mods.r4TrackingAdQuota ?? 40);
+    setVal('r4TrackingMsgQuota', mods.r4TrackingMsgQuota ?? 245);
 }
 
 function setCheck(id, val) {
