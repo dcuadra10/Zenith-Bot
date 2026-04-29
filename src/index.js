@@ -50,7 +50,8 @@ app.get('/api/stats', async (req, res) => {
 // OAuth2 Auth Flow
 app.get('/api/auth/discord', (req, res) => {
     const clientId = process.env.CLIENT_ID;
-    const redirectUri = encodeURIComponent('http://localhost:3000/api/auth/callback');
+    const baseUrl = process.env.DASHBOARD_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/callback`);
     res.redirect(`https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=identify%20guilds`);
 });
 
@@ -58,12 +59,13 @@ app.get('/api/auth/callback', async (req, res) => {
     const code = req.query.code;
     if (!code) return res.send('No code provided');
     try {
+        const baseUrl = process.env.DASHBOARD_URL || `http://localhost:${process.env.PORT || 3000}`;
         const params = new URLSearchParams({
             client_id: process.env.CLIENT_ID,
             client_secret: process.env.DISCORD_CLIENT_SECRET,
             grant_type: 'authorization_code',
             code,
-            redirect_uri: 'http://localhost:3000/api/auth/callback'
+            redirect_uri: `${baseUrl}/api/auth/callback`
         });
         
         const tokenRes = await axios.post('https://discord.com/api/oauth2/token', params.toString(), {
@@ -547,8 +549,8 @@ app.post('/api/levels/import/:guildId', async (req, res) => {
     }
 });
 
-const PORT = 3000;
-app.listen(PORT, () => console.log(`🌍 Dashboard Web corriendo en http://localhost:${PORT}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🌍 Dashboard Web corriendo en puerto ${PORT}`));
 
 // Validar Entorno
 validateEnv();
