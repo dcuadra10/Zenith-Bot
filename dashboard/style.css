@@ -603,39 +603,44 @@ textarea.z-input { resize: vertical; min-height: 100px; line-height: 1.6; }
 
     /* Forms */
     .input-grid, .input-row { grid-template-columns: 1fr; gap: 16px; }
-    .z-input { padding: 12px 14px; font-size: 0.95rem; }
-    .z-btn { padding: 12px 20px; font-size: 0.85rem; }
+    .z-input { padding: 14px; font-size: 16px; } /* 16px prevents iOS auto-zoom */
+    .z-btn { padding: 14px 20px; font-size: 0.9rem; min-height: 48px; } /* Better touch target */
 
     /* Stats */
     .stats-row { grid-template-columns: 1fr; gap: 16px; }
-    .stat-card .stat-value { font-size: 2rem; }
+    .stat-card { padding: 24px; }
+    .stat-card .stat-value { font-size: 2.2rem; }
 
     /* Module headers */
     .module-header { padding: 16px; flex-wrap: wrap; gap: 12px; }
-    .module-icon { width: 44px; height: 44px; font-size: 1.4rem; }
+    .module-icon { width: 48px; height: 48px; font-size: 1.4rem; }
 
     /* Toggle rows */
-    .toggle-row { flex-wrap: wrap; gap: 8px; padding: 14px 0; }
-    .toggle-info h4 { font-size: 0.9rem; }
-    .toggle-info p { font-size: 0.8rem; }
+    .toggle-row { flex-wrap: wrap; gap: 12px; padding: 16px 0; }
+    .toggle-info h4 { font-size: 0.95rem; }
+    .toggle-info p { font-size: 0.85rem; }
 
     /* Tables */
-    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px; }
 
     /* Guild selector */
     .guild-grid { grid-template-columns: 1fr; }
-    .login-card, .guild-selector-box { padding: 32px 24px; }
+    .login-card, .guild-selector-box { padding: 32px 20px; }
 
     /* Save bar mobile */
-    .save-bar-content { min-width: unset; flex-direction: column; gap: 12px; padding: 14px 20px; }
-    .save-bar-text { font-size: 0.85rem; }
-    .save-bar-actions { width: 100%; }
-    .save-bar-actions .z-btn { flex: 1; }
-    .save-bar { left: 16px; right: 16px; transform: none; }
+    .save-bar { left: 12px; right: 12px; transform: none; bottom: -120px; transition: bottom 0.4s var(--transition); }
+    .save-bar.visible { bottom: calc(12px + env(safe-area-inset-bottom)); }
+    .save-bar-content { min-width: unset; flex-direction: column; gap: 12px; padding: 16px; }
+    .save-bar-text { font-size: 0.9rem; }
+    .save-bar-actions { width: 100%; gap: 8px; }
+    .save-bar-actions .z-btn { flex: 1; padding: 10px; }
 
     /* Modal adjustments */
-    .modal-content { margin: 12px; max-height: 90vh; }
-    .z-card[style*="max-width:600px"] { margin: 12px; max-width: calc(100vw - 24px) !important; }
+    .modal-overlay { padding: 10px; }
+    .z-card[style*="max-width:600px"] { margin: 0; width: 100% !important; max-width: 100% !important; border-radius: var(--radius-md); }
+
+    /* Sidebar safe area */
+    .sidebar { padding-top: calc(20px + env(safe-area-inset-top)); padding-bottom: env(safe-area-inset-bottom); }
 
     /* Panel builder preview */
     .ticket-builder-grid { grid-template-columns: 1fr; }
