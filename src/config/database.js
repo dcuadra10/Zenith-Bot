@@ -16,6 +16,46 @@ function convertSqliteSchemaToPg(query) {
     return pgQuery;
 }
 
+// Map of lowercase PG column names to their original camelCase names
+const columnNameMap = {};
+function buildColumnMap(cols) {
+    // Known camelCase column names used throughout the codebase
+    const knownColumns = [
+        'guildId', 'userId', 'statName',
+        'welcomeEnabled', 'welcomeChannel', 'welcomeEmbedTitle', 'welcomeEmbedDesc', 'welcomeColor', 'welcomeImage', 'welcomeUseEmbed',
+        'levelingEnabled', 'xpMin', 'xpMax', 'xpCooldown', 'levelUpChannel', 'roleRewards',
+        'ticketsEnabled', 'ticketsMaxActive', 'ticketsTranscriptChannel', 'ticketCategoryId', 'ticketsApprovalChannel',
+        'automodEnabled', 'automodSpam', 'automodLinks', 'automodMentions', 'automodCaps', 'automodWords',
+        'automodWordList', 'automodMaxMentions', 'automodLogChannel',
+        'loggingEnabled', 'loggingChannel', 'logEdits', 'logDeletes', 'logMembers', 'logRoles', 'logChannels', 'logBans',
+        'autoroleEnabled', 'autoroleIds',
+        'countingEnabled', 'countingChannel', 'countingCurrent', 'countingSameUser', 'countingReset', 'countingMath', 'countingLastUser',
+        'serverStatsEnabled', 'statsTotalMembers', 'statsOnline', 'statsBots', 'statsChannels', 'statsCategoryId',
+        'antinukeEnabled', 'antinukeBan', 'antinukeChannel', 'antinukeRole', 'antinukeWebhook', 'antinukeThreshold', 'antinukeWhitelist',
+        'r4TrackingEnabled', 'r4TrackingRole', 'r4TrackingAdQuota', 'r4TrackingMsgQuota',
+        'spreadsheetId', 'leadershipChannelId', 'welcomeChannelId', 'logChannelId',
+        'panelData', 'channelId', 'messageId',
+        'ticketId', 'logContent', 'closedAt',
+        'weekId', 'messages', 'ads', 'excused',
+        'uuid', 'optJson', 'answersJson',
+        'winnersCount', 'endTime', 'prize', 'requiredRole', 'pingRole', 'durationMs', 'status'
+    ];
+    knownColumns.forEach(col => {
+        columnNameMap[col.toLowerCase()] = col;
+    });
+}
+buildColumnMap();
+
+// Restore camelCase keys on a row object
+function restoreKeys(row) {
+    if (!row) return row;
+    const restored = {};
+    for (const key of Object.keys(row)) {
+        restored[columnNameMap[key] || key] = row[key];
+    }
+    return restored;
+}
+
 async function getDb() {
     if (!dbInstance) {
         if (!process.env.DATABASE_URL) {
@@ -38,12 +78,12 @@ async function getDb() {
             get: async (query, params = []) => {
                 const { text, values } = convertSqliteToPg(query, params);
                 const res = await pool.query(text, values);
-                return res.rows[0];
+                return restoreKeys(res.rows[0]);
             },
             all: async (query, params = []) => {
                 const { text, values } = convertSqliteToPg(query, params);
                 const res = await pool.query(text, values);
-                return res.rows;
+                return res.rows.map(restoreKeys);
             },
             exec: async (query) => {
                 const pgQuery = convertSqliteSchemaToPg(query);
