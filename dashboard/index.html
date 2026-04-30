@@ -446,6 +446,17 @@
                                 </div>
                             </div>
 
+                            <div style="margin-top:24px; border-top:1px solid var(--border-medium); padding-top:24px;">
+                                <div class="z-input-group">
+                                    <label>Panel Image URL (Optional)</label>
+                                    <input class="z-input" type="text" id="panelImageUrl" placeholder="https://example.com/panel-banner.png">
+                                </div>
+                                <div class="toggle-row" style="margin-top:4px;">
+                                    <div class="toggle-info"><h4>Use Rich Embed</h4><p>When off, the panel uses Discord Components V2 (Container layout) instead of a classic embed.</p></div>
+                                    <label class="toggle-switch"><input type="checkbox" id="panelUseEmbed" checked><span class="toggle-slider"></span></label>
+                                </div>
+                            </div>
+
                             <div style="margin-top:30px; border-top:1px solid var(--border-medium); padding-top:24px;">
                             <div style="margin-top:30px; border-top:1px solid var(--border-medium); padding-top:24px; display:flex; gap:12px;">
                                 <button class="z-btn z-btn-secondary" style="flex:1;" onclick="clearPanelForm()"><i class="fas fa-undo"></i> Reset Form</button>

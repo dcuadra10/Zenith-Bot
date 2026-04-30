@@ -194,12 +194,9 @@ app.post('/api/panels/:guildId', async (req, res) => {
         const channel = guild.channels.cache.get(channelId);
         if (!channel) return res.status(400).json({ error: 'Channel not found' });
 
-        const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-        const embed = new EmbedBuilder()
-            .setTitle((panelData.emoji ? panelData.emoji + ' ' : '') + (panelData.title || 'Support'))
-            .setDescription((panelData.descEmoji ? panelData.descEmoji + ' ' : '') + (panelData.description || 'Select an option to open a ticket.'))
-            .setColor(panelData.color || '#a855f7');
-            
+        const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+        const { buildMessage } = require('./utils/messageBuilder');
+
         const rows = [];
         panelData.dropdowns.forEach((dd, i) => {
             if (!dd.options || dd.options.length === 0) return;
@@ -222,7 +219,6 @@ app.post('/api/panels/:guildId', async (req, res) => {
         if (panelData.buttonRows) {
             panelData.buttonRows.forEach((br, i) => {
                 if (!br.options || br.options.length === 0) return;
-                const { ButtonBuilder, ButtonStyle } = require('discord.js');
                 const row = new ActionRowBuilder();
                 br.options.forEach((opt, optIdx) => {
                     let style = ButtonStyle.Primary;
@@ -241,16 +237,28 @@ app.post('/api/panels/:guildId', async (req, res) => {
             });
         }
 
+        const useEmbed = panelData.useEmbed === undefined || panelData.useEmbed === null ? true : !!panelData.useEmbed;
+        const panelTitle = (panelData.emoji ? panelData.emoji + ' ' : '') + (panelData.title || 'Support');
+        const panelDesc = (panelData.descEmoji ? panelData.descEmoji + ' ' : '') + (panelData.description || 'Select an option to open a ticket.');
+
+        const payload = buildMessage(useEmbed, {
+            title: panelTitle,
+            description: panelDesc,
+            color: panelData.color || '#a855f7',
+            imageUrl: panelData.imageUrl || null,
+            actionRows: rows
+        });
+
         let postedMsg;
         if (messageId) {
             try {
                 postedMsg = await channel.messages.fetch(messageId);
-                await postedMsg.edit({ embeds: [embed], components: rows });
+                await postedMsg.edit(payload);
             } catch(e) {
-                postedMsg = await channel.send({ embeds: [embed], components: rows });
+                postedMsg = await channel.send(payload);
             }
         } else {
-            postedMsg = await channel.send({ embeds: [embed], components: rows });
+            postedMsg = await channel.send(payload);
         }
 
         const db = await getDb();

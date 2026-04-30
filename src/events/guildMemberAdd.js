@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { getDb } = require('../config/database');
+const { buildMessage } = require('../utils/messageBuilder');
 
 module.exports = {
     name: 'guildMemberAdd',
@@ -25,33 +26,16 @@ module.exports = {
 
                     const useEmbed = conf.welcomeUseEmbed === undefined || conf.welcomeUseEmbed === null ? true : !!conf.welcomeUseEmbed;
 
-                    if (useEmbed) {
-                        // Classic Embed mode
-                        const embed = new EmbedBuilder()
-                            .setTitle(pTitle)
-                            .setDescription(pDesc)
-                            .setColor(conf.welcomeColor || '#a855f7')
-                            .setThumbnail(member.user.displayAvatarURL());
-                        if (conf.welcomeImage) embed.setImage(conf.welcomeImage);
-                        channel.send({ content: `<@${member.id}>`, embeds: [embed] }).catch(()=>{});
-                    } else {
-                        // Component V2 / Plain text mode
-                        let textContent = `**${pTitle}**\n\n${pDesc}`;
-                        const msgPayload = { content: `<@${member.id}>\n\n${textContent}` };
-                        if (conf.welcomeImage) {
-                            const { AttachmentBuilder } = require('discord.js');
-                            try {
-                                const axios = require('axios');
-                                const response = await axios.get(conf.welcomeImage, { responseType: 'arraybuffer' });
-                                const ext = conf.welcomeImage.split('.').pop().split('?')[0] || 'png';
-                                const attachment = new AttachmentBuilder(Buffer.from(response.data), { name: `welcome.${ext}` });
-                                msgPayload.files = [attachment];
-                            } catch(imgErr) {
-                                console.error('Could not fetch welcome image:', imgErr.message);
-                            }
-                        }
-                        channel.send(msgPayload).catch(()=>{});
-                    }
+                    const payload = buildMessage(useEmbed, {
+                        title: pTitle,
+                        description: pDesc,
+                        color: conf.welcomeColor || '#a855f7',
+                        imageUrl: conf.welcomeImage || null,
+                        thumbnailUrl: useEmbed ? member.user.displayAvatarURL() : null
+                    });
+
+                    payload.content = `<@${member.id}>`;
+                    channel.send(payload).catch(()=>{});
                 }
             }
 

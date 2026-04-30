@@ -1,5 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionsBitField } = require('discord.js');
 const { getDb } = require('../config/database');
+const { buildMessage } = require('./messageBuilder');
 
 async function handleTicketSelection(interaction, opt, guildConfigs, moduleConfigs, panelId, dIdx, oIdx) {
     const systemType = opt.systemType || 'ticket';
@@ -420,44 +421,25 @@ async function createTicketChannel(interaction, opt, answers, guildConfigs, modu
         new ButtonBuilder().setCustomId(`close_ticket_${user.id}`).setLabel('🔒 Close').setStyle(ButtonStyle.Danger)
     );
 
-    if (useEmbed) {
-        const embed = new EmbedBuilder()
-            .setTitle(opt.embedTitle || 'Support Ticket')
-            .setDescription(opt.embedDescription || `Welcome ${user}!`)
-            .setColor('#a855f7');
-        if (opt.imageUrl) embed.setImage(opt.imageUrl);
-        if (answers && answers.length > 0) {
-            let qs = '';
-            answers.forEach((ans, i) => {
-                qs += `**Q${i+1}: ${ans.question}**\n${ans.answer}\n\n`;
-            });
-            embed.addFields({ name: 'Application Answers', value: qs.substring(0, 1024) });
-        }
-        await ticketChannel.send({ content: pingText, embeds: [embed], components: [closeRow] });
-    } else {
-        // Component V2 / Plain text mode
-        let textContent = `**${opt.embedTitle || 'Support Ticket'}**\n\n${opt.embedDescription || `Welcome ${user}!`}`;
-        if (answers && answers.length > 0) {
-            textContent += '\n\n**Application Answers:**\n';
-            answers.forEach((ans, i) => {
-                textContent += `**Q${i+1}: ${ans.question}**\n${ans.answer}\n\n`;
-            });
-        }
-        const msgPayload = { content: `${pingText}\n\n${textContent}`, components: [closeRow] };
-        if (opt.imageUrl) {
-            try {
-                const axios = require('axios');
-                const { AttachmentBuilder } = require('discord.js');
-                const response = await axios.get(opt.imageUrl, { responseType: 'arraybuffer' });
-                const ext = opt.imageUrl.split('.').pop().split('?')[0] || 'png';
-                const attachment = new AttachmentBuilder(Buffer.from(response.data), { name: `ticket-img.${ext}` });
-                msgPayload.files = [attachment];
-            } catch(imgErr) {
-                console.error('Could not fetch ticket image:', imgErr.message);
-            }
-        }
-        await ticketChannel.send(msgPayload);
+    // Build fields from application answers
+    const fields = [];
+    if (answers && answers.length > 0) {
+        answers.forEach((ans, i) => {
+            fields.push({ name: `Q${i+1}: ${ans.question}`, value: ans.answer });
+        });
     }
+
+    const payload = buildMessage(useEmbed, {
+        title: opt.embedTitle || 'Support Ticket',
+        description: opt.embedDescription || `Welcome ${user}!`,
+        color: '#a855f7',
+        imageUrl: opt.imageUrl || null,
+        fields: fields,
+        actionRows: [closeRow]
+    });
+
+    payload.content = pingText;
+    await ticketChannel.send(payload);
 
     if (interaction.reply) {
         await interaction.reply({ content: `✅ Ticket opened in ${ticketChannel}`, ephemeral: true });

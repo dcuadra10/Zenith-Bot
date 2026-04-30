@@ -948,6 +948,8 @@ async function savePanel() {
                     description: getVal('panelDescription') || 'Open a ticket...',
                     descEmoji: getVal('panelDescEmoji'),
                     color: getVal('panelColor'),
+                    imageUrl: getVal('panelImageUrl'),
+                    useEmbed: document.getElementById('panelUseEmbed').checked ? 1 : 0,
                     dropdowns: panelDraft.dropdowns,
                     buttonRows: panelDraft.buttonRows
                 }
@@ -1292,6 +1294,8 @@ async function editPanel(id) {
         setVal('panelDescEmoji', data.descEmoji || '');
         setVal('panelColor', data.color || '#ffd700');
         document.getElementById('panelColorHex').textContent = data.color || '#ffd700';
+        setVal('panelImageUrl', data.imageUrl || '');
+        setCheck('panelUseEmbed', data.useEmbed === undefined || data.useEmbed === null ? true : !!data.useEmbed);
         
         panelDraft.dropdowns = data.dropdowns || [];
         panelDraft.buttonRows = data.buttonRows || [];
