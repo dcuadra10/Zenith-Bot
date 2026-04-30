@@ -1070,6 +1070,12 @@ document.addEventListener('input', (e) => {
     }
 });
 
+document.addEventListener('change', (e) => {
+    if (e.target.closest('.main-content')) {
+        document.getElementById('saveBar').classList.add('visible');
+    }
+});
+
 document.querySelectorAll('.sidebar-link').forEach(link => {
     link.addEventListener('click', () => {
         currentPage = link.dataset.page;
