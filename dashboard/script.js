@@ -1082,8 +1082,20 @@ document.querySelectorAll('.sidebar-link').forEach(link => {
     link.addEventListener('click', () => {
         currentPage = link.dataset.page;
         document.getElementById('saveBar').classList.remove('visible');
+        // Auto-close sidebar on mobile
+        if (window.innerWidth <= 768) {
+            toggleMobileSidebar();
+        }
     });
 });
+
+// Mobile sidebar toggle
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
 
 function revertChanges() {
     document.getElementById('saveBar').classList.remove('visible');

@@ -2,6 +2,7 @@ const { AttachmentBuilder, ChannelType, EmbedBuilder } = require('discord.js');
 const { getDb } = require('../config/database');
 const { handleApplicationMessage } = require('../utils/applicationHandler');
 const { getISOWeekString } = require('../utils/dateHelpers');
+const { buildMessage } = require('../utils/messageBuilder');
 
 module.exports = {
     name: 'messageCreate',
@@ -152,7 +153,12 @@ module.exports = {
                 
                 const upChannel = conf.levelUpChannel ? message.guild.channels.cache.get(conf.levelUpChannel) : message.channel;
                 if (upChannel) {
-                    upChannel.send(`🎉 Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`);
+                    const payload = buildMessage(false, {
+                        title: '🎉 Level Up!',
+                        description: `Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`,
+                        color: '#FFD700'
+                    });
+                    upChannel.send(payload).catch(() => {});
                 }
 
                 // Check Role Rewards (if configured)

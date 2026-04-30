@@ -523,20 +523,133 @@ textarea.z-input { resize: vertical; min-height: 100px; line-height: 1.6; }
 .color-picker-wrap input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
 .color-picker-wrap input[type="color"]::-webkit-color-swatch { border: 2px solid var(--border-soft); border-radius: 50%; }
 
+/* ===== HAMBURGER MENU BUTTON ===== */
+.hamburger-btn {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border-medium);
+    color: var(--gold-500);
+    font-size: 1.4rem;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.hamburger-btn:hover {
+    background: rgba(255, 215, 0, 0.1);
+}
+
+/* Mobile sidebar overlay backdrop */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1400;
+    backdrop-filter: blur(4px);
+}
+.sidebar-overlay.active {
+    display: block;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
     .ticket-builder-grid { grid-template-columns: 1fr; }
+    .input-grid, .input-row { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 1024px) {
-    .main-content { padding: 40px; }
+    .main-content { padding: 30px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .page-header h1 { font-size: 2rem; }
 }
 
 @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); transition: 0.4s var(--transition); width: 280px; box-shadow: 20px 0 50px rgba(0,0,0,0.5); }
-    .sidebar.active { transform: translateX(0); z-index: 1500; }
-    .main-content { margin-left: 0; padding: 30px 20px; }
-    .topbar { padding: 0 20px; }
+    /* Show hamburger */
+    .hamburger-btn { display: flex; align-items: center; justify-content: center; }
+
+    /* Sidebar off-canvas */
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        width: 280px;
+        box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+        z-index: 1500;
+    }
+    .sidebar.active { transform: translateX(0); }
+
+    /* Main content full width */
+    .main-content {
+        margin-left: 0;
+        padding: 20px 16px;
+        padding-bottom: 100px; /* space for save bar */
+    }
+
+    /* Topbar */
+    .topbar { padding: 0 16px; height: 60px; }
+    .topbar-brand h1 { font-size: 1.1rem; }
+    .topbar-invite { display: none; }
+    .main-content { margin-top: 60px; }
+    :root { --topbar-height: 60px; }
+
+    /* Page header */
+    .page-header { margin-bottom: 30px; }
+    .page-header h1 { font-size: 1.6rem; }
+    .page-header p { font-size: 0.95rem; }
+
+    /* Cards */
+    .z-card { padding: 20px; margin-bottom: 16px; }
+    .z-card-header h3 { font-size: 1.1rem; }
+
+    /* Forms */
+    .input-grid, .input-row { grid-template-columns: 1fr; gap: 16px; }
+    .z-input { padding: 12px 14px; font-size: 0.95rem; }
+    .z-btn { padding: 12px 20px; font-size: 0.85rem; }
+
+    /* Stats */
+    .stats-row { grid-template-columns: 1fr; gap: 16px; }
+    .stat-card .stat-value { font-size: 2rem; }
+
+    /* Module headers */
+    .module-header { padding: 16px; flex-wrap: wrap; gap: 12px; }
+    .module-icon { width: 44px; height: 44px; font-size: 1.4rem; }
+
+    /* Toggle rows */
+    .toggle-row { flex-wrap: wrap; gap: 8px; padding: 14px 0; }
+    .toggle-info h4 { font-size: 0.9rem; }
+    .toggle-info p { font-size: 0.8rem; }
+
+    /* Tables */
+    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Guild selector */
+    .guild-grid { grid-template-columns: 1fr; }
+    .login-card, .guild-selector-box { padding: 32px 24px; }
+
+    /* Save bar mobile */
+    .save-bar-content { min-width: unset; flex-direction: column; gap: 12px; padding: 14px 20px; }
+    .save-bar-text { font-size: 0.85rem; }
+    .save-bar-actions { width: 100%; }
+    .save-bar-actions .z-btn { flex: 1; }
+    .save-bar { left: 16px; right: 16px; transform: none; }
+
+    /* Modal adjustments */
+    .modal-content { margin: 12px; max-height: 90vh; }
+    .z-card[style*="max-width:600px"] { margin: 12px; max-width: calc(100vw - 24px) !important; }
+
+    /* Panel builder preview */
+    .ticket-builder-grid { grid-template-columns: 1fr; }
+
+    /* User topbar */
+    .topbar-user-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
+    #topbarUsername { display: none; }
+}
+
+@media (max-width: 400px) {
+    .main-content { padding: 14px 10px; }
+    .z-card { padding: 16px; border-radius: var(--radius-md); }
+    .page-header h1 { font-size: 1.3rem; }
+    .topbar-brand h1 { font-size: 0.95rem; }
 }
 
 /* ===== MODAL OVERLAY ===== */
