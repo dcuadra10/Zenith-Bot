@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { getDb } = require('../config/database');
 const { buildMessage } = require('../utils/messageBuilder');
+const { sendBranded } = require('../utils/brandedSender');
 
 module.exports = {
     name: 'guildMemberAdd',
@@ -35,7 +36,7 @@ module.exports = {
                     });
 
                     payload.content = `<@${member.id}>`;
-                    channel.send(payload).catch(()=>{});
+                    sendBranded(channel, payload).catch(()=>{});
                 }
             }
 

@@ -3,6 +3,7 @@ const { getDb } = require('../config/database');
 const { handleApplicationMessage } = require('../utils/applicationHandler');
 const { getISOWeekString } = require('../utils/dateHelpers');
 const { buildMessage } = require('../utils/messageBuilder');
+const { sendBranded } = require('../utils/brandedSender');
 
 module.exports = {
     name: 'messageCreate',
@@ -169,7 +170,7 @@ module.exports = {
                                 description: `Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`,
                                 color: '#FFD700'
                             });
-                            upChannel.send(payload).catch(() => {});
+                            sendBranded(upChannel, payload).catch(() => {});
                         }
 
                         // Check Role Rewards (if configured)
