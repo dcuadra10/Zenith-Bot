@@ -242,9 +242,12 @@ function loadModuleToggles(mods) {
     setCheck('logBans', mods.logBans);
     // Auto-Role
     setCheck('toggleAutorole', mods.autoroleEnabled);
-    if (mods.autoroleIds) {
-        renderAutoRoles(JSON.parse(mods.autoroleIds || '[]'));
-    }
+    setVal('autoroleIds', mods.autoroleIds);
+    // Swear Jar
+    setCheck('toggleSwearJar', mods.swearJarEnabled);
+    setVal('swearJarChannel', mods.swearJarChannel);
+    setVal('swearJarWords', mods.swearJarWords);
+    setCheck('swearJarPing', mods.swearJarPing === undefined || mods.swearJarPing === null ? true : !!mods.swearJarPing);
     // Counting
     setCheck('toggleCounting', mods.countingEnabled);
     setVal('countingChannel', mods.countingChannel);
@@ -367,7 +370,12 @@ async function saveModuleConfig(moduleName) {
         logBans: getCheck('logBans'),
         // Auto-Role
         autoroleEnabled: getCheck('toggleAutorole'),
-        autoroleIds: JSON.stringify(autoRoles),
+        autoroleIds: getVal('autoroleIds'),
+        // Swear Jar
+        swearJarEnabled: getCheck('toggleSwearJar'),
+        swearJarChannel: getVal('swearJarChannel'),
+        swearJarWords: getVal('swearJarWords'),
+        swearJarPing: getCheck('swearJarPing'),
         // Counting
         countingEnabled: getCheck('toggleCounting'),
         countingChannel: getVal('countingChannel'),

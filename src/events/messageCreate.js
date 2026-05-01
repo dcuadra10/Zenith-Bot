@@ -205,6 +205,35 @@ module.exports = {
                 console.error('R4 tracking error:', e.message);
             }
         }
+
+        // --- 5. SWEAR JAR ---
+        if (conf.swearJarEnabled && conf.swearJarChannel) {
+            try {
+                const customWords = conf.swearJarWords ? conf.swearJarWords.split(',').map(w => w.trim().toLowerCase()) : [];
+                const autoWords = conf.automodWordList ? conf.automodWordList.split(',').map(w => w.trim().toLowerCase()) : [];
+                const words = customWords.length > 0 ? customWords : autoWords;
+                
+                if (words.length > 0) {
+                    const content = message.content.toLowerCase();
+                    const foundWord = words.find(w => content.length > 0 && w.length > 0 && content.includes(w));
+
+                    if (foundWord) {
+                        const sjChannel = message.guild.channels.cache.get(conf.swearJarChannel);
+                        if (sjChannel) {
+                            const ping = conf.swearJarPing ? `<@${message.author.id}>` : `**${message.author.username}**`;
+                            const payload = buildMessage(false, {
+                                title: '🏺 Swear Jar Contribution!',
+                                description: `${ping} just added a coin to the jar for using prohibited dialect: \`${foundWord}\``,
+                                color: '#FFD700'
+                            });
+                            sendBranded(sjChannel, payload).catch(() => {});
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Swear Jar error:', e.message);
+            }
+        }
     },
     // In-memory XP cooldown tracker
     _xpCooldowns: new Map()

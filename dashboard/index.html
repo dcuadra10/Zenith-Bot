@@ -112,6 +112,9 @@
             <div class="sidebar-link" data-page="autorole">
                 <i class="fas fa-tags link-icon"></i> Auto-Role
             </div>
+            <div class="sidebar-link" data-page="swearjar">
+                <i class="fas fa-glass-whiskey link-icon"></i> Swear Jar
+            </div>
 
             <div class="sidebar-footer">
                 <button class="z-btn z-btn-secondary z-btn-block" onclick="goBackToGuilds()"><i class="fas fa-arrow-left"></i> Switch Kingdom</button>
@@ -991,6 +994,75 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ===== AUTO-ROLE ===== -->
+            <section id="page-autorole" class="page-section">
+                <div class="page-header">
+                    <h1>Auto-Role Assignment</h1>
+                    <p>Assign specific roles to citizens immediately upon entry.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-pink-soft);color:var(--accent-pink);"><i class="fas fa-user-tag"></i></div>
+                        <div>
+                            <h3>Identification Protocol</h3>
+                            <p>Automatically provision roles for new members.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleAutorole">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-input-group">
+                        <label>Roles to Assign (Comma separated IDs)</label>
+                        <textarea class="z-input" id="autoroleIds" placeholder="e.g. 123456789012345678, 876543210987654321"></textarea>
+                    </div>
+                    <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('autorole')"><i class="fas fa-save"></i> Save Protocols</button>
+                </div>
+            </section>
+
+            <!-- ===== SWEAR JAR ===== -->
+            <section id="page-swearjar" class="page-section">
+                <div class="page-header">
+                    <h1>Swear Jar</h1>
+                    <p>Contribute to the kingdom's treasury whenever prohibited dialect is used.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-yellow-soft);color:var(--accent-yellow);"><i class="fas fa-glass-whiskey"></i></div>
+                        <div>
+                            <h3>Profanity Tax</h3>
+                            <p>Automate fines for using restricted terminology.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleSwearJar">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-input-group">
+                        <label>Swear Jar Log Channel</label>
+                        <input class="z-input" type="text" id="swearJarChannel" placeholder="Channel ID for the jar messages">
+                    </div>
+                    <div class="z-input-group">
+                        <label>Trigger Words (Comma separated)</label>
+                        <textarea class="z-input" id="swearJarWords" placeholder="e.g. word1, word2, word3"></textarea>
+                        <small style="color:var(--text-muted);">Leave empty to use global AutoMod word list.</small>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Mention Citizen</h4><p>Ping the user when they contribute to the jar.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="swearJarPing" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('swearjar')"><i class="fas fa-save"></i> Establish Jar</button>
+                </div>
+            </section>
 
         </div><!-- end main-content -->
 
