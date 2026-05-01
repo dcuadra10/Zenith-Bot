@@ -64,7 +64,7 @@ module.exports = {
                     const db = await getDb();
                     await db.run(
                         `INSERT INTO users (userId, invites) VALUES (?, 1)
-                         ON CONFLICT(userId) DO UPDATE SET invites = invites + 1`,
+                         ON CONFLICT(userId) DO UPDATE SET invites = users.invites + 1`,
                         [inviterId]
                     );
                     

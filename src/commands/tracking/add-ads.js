@@ -26,7 +26,7 @@ async function processAdsSubmission(interaction, amount) {
 
         await db.run(
             `INSERT INTO global_stats (statName, value) VALUES ('total_ads_globales', ?) 
-             ON CONFLICT(statName) DO UPDATE SET value = value + ?`,
+             ON CONFLICT(statName) DO UPDATE SET value = global_stats.value + ?`,
              [amount, amount]
         );
 
@@ -39,7 +39,7 @@ async function processAdsSubmission(interaction, amount) {
                 await db.run(
                     `INSERT INTO r4_tracking (userId, guildId, weekId, messages, ads, excused) 
                      VALUES (?, ?, ?, 0, ?, 0)
-                     ON CONFLICT(userId, guildId, weekId) DO UPDATE SET ads = ads + ?`,
+                     ON CONFLICT(userId, guildId, weekId) DO UPDATE SET ads = r4_tracking.ads + ?`,
                     [interaction.user.id, interaction.guild.id, weekId, amount, amount]
                 );
             }

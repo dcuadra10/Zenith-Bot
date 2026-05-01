@@ -139,7 +139,7 @@ module.exports = {
             
             await db.run(
                 `INSERT INTO users (userId, xp, level) VALUES (?, ?, 0)
-                 ON CONFLICT(userId) DO UPDATE SET xp = xp + ?`,
+                 ON CONFLICT(userId) DO UPDATE SET xp = users.xp + ?`,
                 [message.author.id, xpAmount, xpAmount]
             );
             
@@ -149,7 +149,7 @@ module.exports = {
             const requiredXP = 5 * (currentLevel ** 2) + 50 * currentLevel + 100;
 
             if (userProfile.xp >= requiredXP) {
-                await db.run(`UPDATE users SET level = level + 1, xp = 0 WHERE userId = ?`, [message.author.id]);
+                await db.run(`UPDATE users SET level = users.level + 1, xp = 0 WHERE userId = ?`, [message.author.id]);
                 
                 const upChannel = conf.levelUpChannel ? message.guild.channels.cache.get(conf.levelUpChannel) : message.channel;
                 if (upChannel) {
@@ -181,7 +181,7 @@ module.exports = {
                 await db.run(
                     `INSERT INTO r4_tracking (userId, guildId, weekId, messages, ads, excused) 
                      VALUES (?, ?, ?, 1, 0, 0)
-                     ON CONFLICT(userId, guildId, weekId) DO UPDATE SET messages = messages + 1`,
+                     ON CONFLICT(userId, guildId, weekId) DO UPDATE SET messages = r4_tracking.messages + 1`,
                     [message.author.id, message.guild.id, weekId]
                 );
             }
