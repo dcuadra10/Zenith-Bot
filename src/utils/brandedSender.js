@@ -3,6 +3,7 @@
  * Uses webhooks to send messages with per-guild custom bot name and avatar.
  */
 const { getDb } = require('../config/database');
+const axios = require('axios');
 
 // In-memory cache: guildId+channelId -> webhook
 const webhookCache = new Map();
@@ -97,4 +98,46 @@ function clearWebhookCache(guildId, channelId) {
     webhookCache.delete(`${guildId}_${channelId}`);
 }
 
-module.exports = { sendBranded, getBranding, getOrCreateWebhook, clearWebhookCache };
+/**
+ * Update the bot's member profile in a guild (Nickname and Avatar).
+ * @param {Guild} guild - Discord guild
+ * @param {Object} branding - { brandingName, brandingAvatar }
+ */
+async function updateBotGuildIdentity(guild, branding) {
+    if (!guild) return;
+    try {
+        const me = await guild.members.fetchMe();
+        const { brandingName, brandingAvatar } = branding;
+
+        const updateData = {};
+        
+        // Handle Nickname
+        if (brandingName) {
+            updateData.nick = brandingName;
+        } else {
+            updateData.nick = null; // Reset to default
+        }
+
+        // Handle Avatar
+        if (brandingAvatar) {
+            try {
+                const response = await axios.get(brandingAvatar, { responseType: 'arraybuffer' });
+                const buffer = Buffer.from(response.data, 'binary');
+                updateData.avatar = buffer;
+            } catch (e) {
+                console.error(`Failed to fetch branding avatar for guild ${guild.id}:`, e.message);
+            }
+        } else {
+            updateData.avatar = null; // Reset to default
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            await me.edit(updateData);
+        }
+    } catch (e) {
+        // Silently fail if permissions are missing or feature unavailable
+        // console.error(`Error updating bot identity for guild ${guild.id}:`, e.message);
+    }
+}
+
+module.exports = { sendBranded, getBranding, getOrCreateWebhook, clearWebhookCache, updateBotGuildIdentity };

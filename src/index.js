@@ -203,6 +203,14 @@ app.post('/api/branding/:guildId', async (req, res) => {
              brandingAvatar=excluded.brandingAvatar`,
              [req.params.guildId, brandingName || null, brandingAvatar || null]
         );
+
+        // Update Bot Profile in the guild
+        const { updateBotGuildIdentity } = require('./utils/brandedSender');
+        const guild = client.guilds.cache.get(req.params.guildId);
+        if (guild) {
+            await updateBotGuildIdentity(guild, { brandingName, brandingAvatar });
+        }
+
         res.json({ success: true });
     } catch (e) {
         console.error(e);
@@ -223,7 +231,11 @@ app.post('/api/branding/:guildId/test', async (req, res) => {
         const channel = guild.channels.cache.get(channelId);
         if (!channel) return res.status(400).json({ error: 'Channel not found' });
 
-        const { getOrCreateWebhook } = require('./utils/brandedSender');
+        const { getOrCreateWebhook, updateBotGuildIdentity } = require('./utils/brandedSender');
+        
+        // Update profile too so they see the change on the bot user
+        await updateBotGuildIdentity(guild, { brandingName, brandingAvatar });
+
         const webhook = await getOrCreateWebhook(channel);
         
         if (!webhook) {
