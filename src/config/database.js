@@ -34,6 +34,7 @@ function buildColumnMap(cols) {
         'antinukeEnabled', 'antinukeBan', 'antinukeChannel', 'antinukeRole', 'antinukeWebhook', 'antinukeThreshold', 'antinukeWhitelist',
         'r4TrackingEnabled', 'r4TrackingRole', 'r4TrackingAdQuota', 'r4TrackingMsgQuota',
         'spreadsheetId', 'leadershipChannelId', 'welcomeChannelId', 'logChannelId',
+        'brandingName', 'brandingAvatar',
         'panelData', 'channelId', 'messageId',
         'ticketId', 'logContent', 'closedAt',
         'weekId', 'messages', 'ads', 'excused',
@@ -247,7 +248,7 @@ async function getDb() {
         }
 
         // Auto-migrate guild_configs columns
-        const guildCols = ['welcomeChannelId', 'logChannelId', 'ticketCategoryId'];
+        const guildCols = ['welcomeChannelId', 'logChannelId', 'ticketCategoryId', 'brandingName', 'brandingAvatar'];
         for (const col of guildCols) {
             try { await dbInstance.exec(`ALTER TABLE guild_configs ADD COLUMN ${col} TEXT`); } catch (e) {}
         }

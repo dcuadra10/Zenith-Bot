@@ -187,6 +187,7 @@ async function loadDashboardData() {
     fetchTranscripts();
     fetchGiveaways();
     fetchR4Tracking();
+    fetchBranding();
 }
 
 function setVal(id, val) {
@@ -1371,4 +1372,102 @@ async function executeLevelImport(input) {
         showToast('❌ Error reading file.', true);
     };
     reader.readAsText(file);
+}
+
+// =============================================
+// BRANDING SYSTEM
+// =============================================
+let brandingDefaults = { name: 'Zenith', avatar: '' };
+
+async function fetchBranding() {
+    if (!activeGuild) return;
+    try {
+        const res = await fetch(`${API_URL}/branding/${activeGuild.id}`);
+        const data = await res.json();
+        brandingDefaults.name = data.defaultName || 'Zenith';
+        brandingDefaults.avatar = data.defaultAvatar || '';
+        setVal('brandingName', data.brandingName);
+        setVal('brandingAvatar', data.brandingAvatar);
+        updateBrandingPreview();
+    } catch (e) { console.error('Error loading branding:', e); }
+}
+
+function updateBrandingPreview() {
+    const name = getVal('brandingName') || brandingDefaults.name;
+    const avatarUrl = getVal('brandingAvatar') || brandingDefaults.avatar;
+
+    const nameEl = document.getElementById('brandingPreviewName');
+    const avatarEl = document.getElementById('brandingPreviewAvatar');
+
+    if (nameEl) nameEl.textContent = name;
+    if (avatarEl) {
+        if (avatarUrl) {
+            avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='${name[0]?.toUpperCase() || 'Z'}'">`;
+        } else {
+            avatarEl.innerHTML = name[0]?.toUpperCase() || 'Z';
+        }
+    }
+}
+
+async function saveBranding() {
+    if (!activeGuild) return;
+    const brandingName = getVal('brandingName');
+    const brandingAvatar = getVal('brandingAvatar');
+
+    // Validate name length
+    if (brandingName && (brandingName.length < 1 || brandingName.length > 80)) {
+        return showToast('❌ Display name must be 1-80 characters.', true);
+    }
+
+    // Validate avatar URL
+    if (brandingAvatar && !brandingAvatar.match(/^https?:\/\/.+/)) {
+        return showToast('❌ Avatar must be a valid URL starting with http:// or https://', true);
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/branding/${activeGuild.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ brandingName, brandingAvatar })
+        });
+        if (res.ok) {
+            showToast('✅ Bot identity saved for this server!');
+        } else {
+            showToast('❌ Error saving branding.', true);
+        }
+    } catch (e) {
+        showToast('❌ Network error saving branding.', true);
+    }
+}
+
+function resetBranding() {
+    document.getElementById('brandingName').value = '';
+    document.getElementById('brandingAvatar').value = '';
+    updateBrandingPreview();
+    showToast('Identity reset to defaults. Click Save to apply.');
+}
+
+async function testBranding() {
+    if (!activeGuild) return;
+    const channelId = getVal('brandingTestChannel');
+    if (!channelId) return showToast('❌ Enter a channel ID first.', true);
+
+    const brandingName = getVal('brandingName');
+    const brandingAvatar = getVal('brandingAvatar');
+
+    try {
+        const res = await fetch(`${API_URL}/branding/${activeGuild.id}/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channelId, brandingName, brandingAvatar })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('✅ Test message sent! Check the channel.');
+        } else {
+            showToast(`❌ ${data.error || 'Failed to send test.'}`, true);
+        }
+    } catch (e) {
+        showToast('❌ Network error sending test.', true);
+    }
 }
