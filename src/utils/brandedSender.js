@@ -119,24 +119,28 @@ async function updateBotGuildIdentity(guild, branding) {
         }
 
         // Handle Avatar
-        if (brandingAvatar) {
+        if (brandingAvatar && brandingAvatar.startsWith('http')) {
             try {
+                console.log(`[BRANDING] Fetching avatar from: ${brandingAvatar}`);
                 const response = await axios.get(brandingAvatar, { responseType: 'arraybuffer' });
-                const buffer = Buffer.from(response.data, 'binary');
-                updateData.avatar = buffer;
+                updateData.avatar = Buffer.from(response.data);
+                console.log(`[BRANDING] Avatar fetched successfully (${updateData.avatar.length} bytes)`);
             } catch (e) {
-                console.error(`Failed to fetch branding avatar for guild ${guild.id}:`, e.message);
+                console.error(`[BRANDING ERROR] Failed to fetch branding avatar for guild ${guild.id}:`, e.message);
             }
         } else {
             updateData.avatar = null; // Reset to default
         }
 
         if (Object.keys(updateData).length > 0) {
+            console.log(`[BRANDING] Applying identity update to ${guild.name}:`, JSON.stringify({ nick: updateData.nick, hasAvatar: !!updateData.avatar }));
             await me.edit(updateData);
+            console.log(`[BRANDING] Successfully updated bot identity in guild ${guild.name} (${guild.id})`);
+        } else {
+            console.log(`[BRANDING] No changes to apply for guild ${guild.name}`);
         }
     } catch (e) {
-        // Silently fail if permissions are missing or feature unavailable
-        // console.error(`Error updating bot identity for guild ${guild.id}:`, e.message);
+        console.error(`[BRANDING ERROR] Failed to update bot identity in guild ${guild.id}:`, e.message);
     }
 }
 

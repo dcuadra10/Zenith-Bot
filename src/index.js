@@ -192,6 +192,7 @@ app.post('/api/branding/:guildId', async (req, res) => {
     if (!token) return res.status(401).json({ error: 'No autorizado' });
 
     const { brandingName, brandingAvatar } = req.body;
+    console.log(`[API] Saving branding for ${req.params.guildId}: Name=${brandingName}, Avatar=${brandingAvatar}`);
     try {
         const db = await getDb();
         // Ensure the guild_configs row exists
