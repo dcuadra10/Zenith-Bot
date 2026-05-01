@@ -135,56 +135,76 @@ module.exports = {
 
         // --- 3. LEVELING SYSTEM ---
         if (conf.levelingEnabled) {
-            const xpAmount = Math.floor(Math.random() * ((conf.xpMax || 15) - (conf.xpMin || 5) + 1)) + (conf.xpMin || 5);
-            
-            await db.run(
-                `INSERT INTO users (userId, xp, level) VALUES (?, ?, 0)
-                 ON CONFLICT(userId) DO UPDATE SET xp = users.xp + ?`,
-                [message.author.id, xpAmount, xpAmount]
-            );
-            
-            const userProfile = await db.get(`SELECT * FROM users WHERE userId = ?`, [message.author.id]);
-            
-            const currentLevel = userProfile.level;
-            const requiredXP = 5 * (currentLevel ** 2) + 50 * currentLevel + 100;
-
-            if (userProfile.xp >= requiredXP) {
-                await db.run(`UPDATE users SET level = users.level + 1, xp = 0 WHERE userId = ?`, [message.author.id]);
+            try {
+                // XP Cooldown check (in-memory)
+                const cooldownMs = (conf.xpCooldown || 60) * 1000;
+                const cooldownKey = `${message.guild.id}_${message.author.id}`;
+                const now = Date.now();
+                const lastXp = module.exports._xpCooldowns.get(cooldownKey);
                 
-                const upChannel = conf.levelUpChannel ? message.guild.channels.cache.get(conf.levelUpChannel) : message.channel;
-                if (upChannel) {
-                    const payload = buildMessage(false, {
-                        title: '🎉 Level Up!',
-                        description: `Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`,
-                        color: '#FFD700'
-                    });
-                    upChannel.send(payload).catch(() => {});
-                }
+                if (!lastXp || (now - lastXp) >= cooldownMs) {
+                    module.exports._xpCooldowns.set(cooldownKey, now);
+                    
+                    const xpAmount = Math.floor(Math.random() * ((conf.xpMax || 15) - (conf.xpMin || 5) + 1)) + (conf.xpMin || 5);
+                    
+                    await db.run(
+                        `INSERT INTO users (userId, xp, level) VALUES (?, ?, 0)
+                         ON CONFLICT(userId) DO UPDATE SET xp = users.xp + ?`,
+                        [message.author.id, xpAmount, xpAmount]
+                    );
+                    
+                    const userProfile = await db.get(`SELECT * FROM users WHERE userId = ?`, [message.author.id]);
+                    if (!userProfile) return;
+                    
+                    const currentLevel = userProfile.level;
+                    const requiredXP = 5 * (currentLevel ** 2) + 50 * currentLevel + 100;
 
-                // Check Role Rewards (if configured)
-                try {
-                    const rewards = JSON.parse(conf.roleRewards || '[]');
-                    const reward = rewards.find(r => parseInt(r.level) === currentLevel + 1);
-                    if (reward && reward.roleId) {
-                        const rr = message.guild.roles.cache.get(reward.roleId.replace(/[^0-9]/g, ''));
-                        if (rr) await message.member.roles.add(rr).catch(()=>{});
+                    if (userProfile.xp >= requiredXP) {
+                        await db.run(`UPDATE users SET level = level + 1, xp = 0 WHERE userId = ?`, [message.author.id]);
+                        
+                        const upChannel = conf.levelUpChannel ? message.guild.channels.cache.get(conf.levelUpChannel) : message.channel;
+                        if (upChannel) {
+                            const payload = buildMessage(false, {
+                                title: '🎉 Level Up!',
+                                description: `Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`,
+                                color: '#FFD700'
+                            });
+                            upChannel.send(payload).catch(() => {});
+                        }
+
+                        // Check Role Rewards (if configured)
+                        try {
+                            const rewards = JSON.parse(conf.roleRewards || '[]');
+                            const reward = rewards.find(r => parseInt(r.level) === currentLevel + 1);
+                            if (reward && reward.roleId) {
+                                const rr = message.guild.roles.cache.get(reward.roleId.replace(/[^0-9]/g, ''));
+                                if (rr) await message.member.roles.add(rr).catch(()=>{});
+                            }
+                        } catch(e) {}
                     }
-                } catch(e) {}
+                }
+            } catch (e) {
+                console.error('Leveling error:', e.message);
             }
         }
 
         // --- 4. R4 TRACKING (MESSAGES) ---
         if (conf.r4TrackingEnabled && conf.r4TrackingRole) {
-            // Check if member has the tracked role
-            if (message.member.roles.cache.has(conf.r4TrackingRole.replace(/[^0-9]/g, ''))) {
-                const weekId = getISOWeekString();
-                await db.run(
-                    `INSERT INTO r4_tracking (userId, guildId, weekId, messages, ads, excused) 
-                     VALUES (?, ?, ?, 1, 0, 0)
-                     ON CONFLICT(userId, guildId, weekId) DO UPDATE SET messages = r4_tracking.messages + 1`,
-                    [message.author.id, message.guild.id, weekId]
-                );
+            try {
+                if (message.member.roles.cache.has(conf.r4TrackingRole.replace(/[^0-9]/g, ''))) {
+                    const weekId = getISOWeekString();
+                    await db.run(
+                        `INSERT INTO r4_tracking (userId, guildId, weekId, messages, ads, excused) 
+                         VALUES (?, ?, ?, 1, 0, 0)
+                         ON CONFLICT(userId, guildId, weekId) DO UPDATE SET messages = r4_tracking.messages + 1`,
+                        [message.author.id, message.guild.id, weekId]
+                    );
+                }
+            } catch (e) {
+                console.error('R4 tracking error:', e.message);
             }
         }
-    }
+    },
+    // In-memory XP cooldown tracker
+    _xpCooldowns: new Map()
 };
