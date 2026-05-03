@@ -15,9 +15,11 @@ app.use(express.static(path.join(__dirname, '../dashboard')));
 
 // Middleware to verify Discord Token
 async function authenticateToken(req, res, next) {
-    const token = req.cookies.discord_token;
+    const authHeader = req.headers['authorization'];
+    const token = (authHeader && authHeader.split(' ')[1]) || req.cookies.discord_token;
+    
     if (!token) {
-        console.log('[Auth] No token found in cookies');
+        console.log('[Auth] No token found in headers or cookies');
         return res.status(401).json({ error: 'No autorizado' });
     }
 
@@ -26,6 +28,7 @@ async function authenticateToken(req, res, next) {
             headers: { Authorization: `Bearer ${token}` }
         });
         req.user = userRes.data;
+        req.token = token; // Store for reuse
         next();
     } catch (e) {
         console.error('[Auth] Token verification failed:', e.response?.data || e.message);
@@ -135,7 +138,7 @@ app.get('/api/auth/callback', async (req, res) => {
             path: '/',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
-        res.redirect('/?token=success');
+        res.redirect(`/?token=success&access_token=${accessToken}`);
     } catch (error) {
         console.error('Error en callback Oauth2:', error.response?.data || error.message);
         res.status(500).send('Error durante OAuth2');

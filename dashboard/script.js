@@ -196,6 +196,25 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
+async function apiFetch(endpoint, options = {}) {
+    const token = localStorage.getItem('discord_token') || getCookie('discord_token');
+    const headers = {
+        'Authorization': `Bearer ${token}`,
+        ...options.headers
+    };
+    if (options.body && !(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
+    const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+    if (res.status === 401) {
+        localStorage.removeItem('discord_token');
+        document.cookie = 'discord_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        showScreen('loginScreen');
+        throw new Error('Unauthorized');
+    }
+    return res;
+}
+
 function animateValue(el, start, end, duration) {
     if (typeof el === 'string') el = document.getElementById(el);
     if (!el) return;
@@ -225,10 +244,12 @@ function showScreen(id) {
 window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('token') === 'success') {
+        const token = params.get('access_token');
+        if (token) localStorage.setItem('discord_token', token);
         window.history.replaceState({}, document.title, '/');
         showScreen('guildScreen');
         fetchGuilds();
-    } else if (getCookie('discord_token')) {
+    } else if (localStorage.getItem('discord_token') || getCookie('discord_token')) {
         showScreen('guildScreen');
         fetchGuilds();
     }
@@ -268,11 +289,7 @@ async function fetchGuilds() {
     console.log('[Dashboard] Fetching guilds...');
     const list = document.getElementById('guildList');
     try {
-        const res = await fetch(`${API_URL}/guilds`);
-        if (!res.ok) {
-            console.error('[Dashboard] Auth failed, status:', res.status);
-            throw new Error('Auth');
-        }
+        const res = await apiFetch('/guilds');
         const guilds = await res.json();
         console.log('[Dashboard] Loaded guilds:', guilds.length);
 
@@ -299,8 +316,7 @@ async function fetchGuilds() {
             list.appendChild(el);
         });
     } catch (e) {
-        document.cookie = 'discord_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        window.location.reload();
+        console.error('[Dashboard] Fetch Guilds Error:', e);
     }
 }
 
@@ -1790,7 +1806,7 @@ async function disconnectCustomBot() {
 async function fetchMarketConfig() {
     if (!activeGuild) return;
     try {
-        const res = await fetch(`${API_URL}/market-config/${activeGuild.id}`);
+        const res = await apiFetch(`/market-config/${activeGuild.id}`);
         const cfg = await res.json();
         
         setCheck('toggleMarket', cfg.marketEnabled);
@@ -1818,9 +1834,8 @@ async function saveMarketConfig() {
     if (!activeGuild) return;
     showToast('Saving Market+ Config...');
     try {
-        const res = await fetch(`${API_URL}/market-config/${activeGuild.id}`, {
+        const res = await apiFetch(`/market-config/${activeGuild.id}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 marketEnabled: getCheck('toggleMarket'),
                 forumChannelId: getVal('marketForumChannel'),
