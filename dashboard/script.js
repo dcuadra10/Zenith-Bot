@@ -265,11 +265,16 @@ function setupColorSync(inputId, hexId) {
 
 // ===== GUILD LOADING =====
 async function fetchGuilds() {
+    console.log('[Dashboard] Fetching guilds...');
     const list = document.getElementById('guildList');
     try {
         const res = await fetch(`${API_URL}/guilds`);
-        if (!res.ok) throw new Error('Auth');
+        if (!res.ok) {
+            console.error('[Dashboard] Auth failed, status:', res.status);
+            throw new Error('Auth');
+        }
         const guilds = await res.json();
+        console.log('[Dashboard] Loaded guilds:', guilds.length);
 
         if (guilds.length === 0) {
             list.innerHTML = '<p style="color:var(--text-muted);text-align:center;width:100%;">No shared admin servers found.</p>';

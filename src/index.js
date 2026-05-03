@@ -16,7 +16,10 @@ app.use(express.static(path.join(__dirname, '../dashboard')));
 // Middleware to verify Discord Token
 async function authenticateToken(req, res, next) {
     const token = req.cookies.discord_token;
-    if (!token) return res.status(401).json({ error: 'No autorizado' });
+    if (!token) {
+        console.log('[Auth] No token found in cookies');
+        return res.status(401).json({ error: 'No autorizado' });
+    }
 
     try {
         const userRes = await axios.get('https://discord.com/api/users/@me', {
@@ -25,6 +28,7 @@ async function authenticateToken(req, res, next) {
         req.user = userRes.data;
         next();
     } catch (e) {
+        console.error('[Auth] Token verification failed:', e.response?.data || e.message);
         res.status(401).json({ error: 'Sesión expirada' });
     }
 }
@@ -124,7 +128,13 @@ app.get('/api/auth/callback', async (req, res) => {
         const accessToken = tokenRes.data.access_token;
         
         // Guardar token en cookie segura y regresar al dashboard
-        res.cookie('discord_token', accessToken, { httpOnly: false }); // false para poder validarlo desde JS front, o preferiblemente validado en backend
+        res.cookie('discord_token', accessToken, { 
+            httpOnly: false, 
+            secure: true, 
+            sameSite: 'Lax',
+            path: '/',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
         res.redirect('/?token=success');
     } catch (error) {
         console.error('Error en callback Oauth2:', error.response?.data || error.message);
