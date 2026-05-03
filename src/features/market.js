@@ -336,6 +336,8 @@ async function handleMarketInteraction(interaction) {
     } else if (interaction.isModalSubmit()) {
         if (interaction.customId.startsWith('modal_market_offer_')) {
             await handleMarketOfferSubmit(interaction);
+        } else if (interaction.customId.startsWith('modal_market_accept_')) {
+            await handleMarketAcceptSubmit(interaction);
         }
     }
 }
@@ -502,29 +504,74 @@ async function handleMarketAcceptOffer(interaction) {
     const tx = await db.get(`SELECT * FROM market_transactions WHERE id = ?`, [txId]);
     if (!tx || tx.status !== 'offer_sent') return interaction.reply({ content: '❌ Invalid or expired transaction.', ephemeral: true });
 
-    await db.run(`UPDATE market_transactions SET status = 'fee_pending' WHERE id = ?`, [txId]);
+    const { ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+    
+    const modal = new ModalBuilder()
+        .setCustomId(`modal_market_accept_${txId}`)
+        .setTitle(`Accept Offer & Provide Credentials`);
+
+    const emailInput = new TextInputBuilder()
+        .setCustomId('accEmail')
+        .setLabel('Account Email / Username')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('example@gmail.com')
+        .setRequired(true);
+
+    const passInput = new TextInputBuilder()
+        .setCustomId('accPass')
+        .setLabel('Email Password')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('Your password here')
+        .setRequired(true);
+
+    const providerInput = new TextInputBuilder()
+        .setCustomId('accProvider')
+        .setLabel('Email Provider')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('Gmail, Outlook, Yahoo, etc.')
+        .setRequired(true);
+
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(emailInput),
+        new ActionRowBuilder().addComponents(passInput),
+        new ActionRowBuilder().addComponents(providerInput)
+    );
+
+    await interaction.showModal(modal);
+}
+
+async function handleMarketAcceptSubmit(interaction) {
+    const txId = interaction.customId.replace('modal_market_accept_', '');
+    const email = interaction.fields.getTextInputValue('accEmail');
+    const pass = interaction.fields.getTextInputValue('accPass');
+    const provider = interaction.fields.getTextInputValue('accProvider');
+
+    const db = await getDb();
+    const tx = await db.get(`SELECT * FROM market_transactions WHERE id = ?`, [txId]);
+    if (!tx) return interaction.reply({ content: '❌ Transaction not found.', ephemeral: true });
+
+    const credentials = { email, pass, provider };
+    await db.run(`UPDATE market_transactions SET status = 'fee_pending', offerJson = ? WHERE id = ?`, [JSON.stringify(credentials), txId]);
     
     const config = await db.get(`SELECT * FROM market_configs WHERE guildId = ?`, [tx.guildId]);
     const feePct = config.feePercentage || 5;
     
-    // Parse numeric price to calculate fee
     let numericPrice = parseFloat(tx.price.replace(/[^0-9.]/g, ''));
     if (isNaN(numericPrice)) numericPrice = 0;
     const feeAmount = (numericPrice * (feePct / 100)).toFixed(2);
 
-    await interaction.update({ 
-        content: `✅ You accepted the offer of **${tx.price}**.\n\n**Next Step:** You must pay the Market Fee of **${feePct}%** ($${feeAmount}) before the Middleman proceeds.\n\n**Payment Methods:**\n${config.paymentMethods || 'Please ask the Middleman for payment details.'}\n\nOnce paid, the Market Owner will verify it.`, 
-        embeds: [], 
-        components: [] 
+    await interaction.reply({ 
+        content: `✅ You have accepted the offer and provided the credentials.\n\n**Next Step:** You must pay the Market Fee of **${feePct}%** ($${feeAmount}) before the Middleman proceeds.\n\n**Payment Methods:**\n${config.paymentMethods || 'Please ask the Middleman for payment details.'}\n\nOnce paid, the Market Owner will verify it.`, 
+        ephemeral: true 
     });
 
-    // Notify Owner Channel
+    // Notify Owner Channel (as before)
     if (config.ownerChannelId) {
         const ownerChannel = interaction.client.channels.cache.get(config.ownerChannelId);
         if (ownerChannel) {
             const embed = new EmbedBuilder()
                 .setTitle(`💸 Fee Payment Pending: ${tx.listingCode}`)
-                .setDescription(`**Transaction:** ${txId}\n**Seller:** <@${tx.sellerId}>\n**Expected Fee:** $${feeAmount} (${feePct}% of ${tx.price})\n\nClick below when you have successfully received the funds in your PayPal/Wise.`)
+                .setDescription(`**Transaction:** ${txId}\n**Seller:** <@${tx.sellerId}>\n**Expected Fee:** $${feeAmount} (${feePct}% of ${tx.price})\n\nClick below when you have successfully received the funds.`)
                 .setColor('#f1c40f');
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`market_feepaid_${txId}`).setLabel('Confirm Fee Received').setStyle(ButtonStyle.Success)
@@ -549,15 +596,21 @@ async function handleMarketFeeConfirmed(interaction) {
     await interaction.update({ content: `✅ Fee confirmed for TX ${txId}. The Middleman has been notified to proceed.`, embeds: [], components: [] });
 
     const tx = await db.get(`SELECT * FROM market_transactions WHERE id = ?`, [txId]);
+    let credsText = '';
+    if (tx.offerJson) {
+        try {
+            const creds = JSON.parse(tx.offerJson);
+            credsText = `\n\n🔐 **Seller Credentials:**\n- **Email/User:** ${creds.email}\n- **Password:** ${creds.pass}\n- **Provider:** ${creds.provider}`;
+        } catch(e) {}
+    }
     
-    // Find the buy ticket to notify MM. We'll broadcast to the MM via DM for safety, or we could find the channel.
     const mm = await interaction.client.users.fetch(tx.middlemanId).catch(()=>null);
     if (mm) {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`market_complete_${txId}`).setLabel('Complete Transaction').setStyle(ButtonStyle.Success)
         );
         await mm.send({ 
-            content: `✅ The **Market Fee** for TX ${txId} (${tx.listingCode}) has been confirmed by the owner!\n\n**Middleman Instructions:**\n1. Secure the account info from the Seller.\n2. Receive the funds from the Buyer.\n3. Release account to Buyer and funds to Seller.\n\nOnce absolutely finished, click below:`,
+            content: `✅ The **Market Fee** for TX ${txId} (${tx.listingCode}) has been confirmed by the owner!${credsText}\n\n**Middleman Instructions:**\n1. Verify the account credentials provided above.\n2. Receive the funds from the Buyer.\n3. Release account to Buyer and funds to Seller.\n\nOnce absolutely finished, click below:`,
             components: [row]
         }).catch(()=>null);
     }
