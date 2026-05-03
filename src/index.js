@@ -13,6 +13,31 @@ app.use(cors());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../dashboard')));
 
+// Middleware to verify Discord Token
+async function authenticateToken(req, res, next) {
+    const token = req.cookies.discord_token;
+    if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+    try {
+        const userRes = await axios.get('https://discord.com/api/users/@me', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        req.user = userRes.data;
+        next();
+    } catch (e) {
+        res.status(401).json({ error: 'Sesión expirada' });
+    }
+}
+
+// Helper to check if user has admin permissions in a guild
+async function checkAdmin(userId, guildId) {
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) return false;
+    const member = await guild.members.fetch(userId).catch(() => null);
+    if (!member) return false;
+    return member.permissions.has('Administrator');
+}
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -168,49 +193,8 @@ app.post('/api/config/:guildId', async (req, res) => {
 });
 
 // ============================================
-// MARKET+ ROUTES
+// MARKET+ ROUTES (DEFINED BELOW)
 // ============================================
-app.get('/api/market-config/:guildId', authenticateToken, async (req, res) => {
-    try {
-        const hasAdmin = await checkAdmin(req.user.id, req.params.guildId);
-        if (!hasAdmin) return res.status(403).json({ error: 'Forbidden' });
-
-        const db = await getDb();
-        const config = await db.get(`SELECT * FROM market_configs WHERE guildId = ?`, [req.params.guildId]);
-        res.json(config || {});
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-app.post('/api/market-config/:guildId', authenticateToken, async (req, res) => {
-    try {
-        const hasAdmin = await checkAdmin(req.user.id, req.params.guildId);
-        if (!hasAdmin) return res.status(403).json({ error: 'Forbidden' });
-
-        const db = await getDb();
-        const { marketEnabled, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage } = req.body;
-        
-        await db.run(
-            `INSERT INTO market_configs (guildId, marketEnabled, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-             ON CONFLICT(guildId) DO UPDATE SET 
-             marketEnabled = excluded.marketEnabled,
-             forumChannelId = excluded.forumChannelId,
-             approvalChannelId = excluded.approvalChannelId,
-             ownerChannelId = excluded.ownerChannelId,
-             paymentMethods = excluded.paymentMethods,
-             middlemanRole = excluded.middlemanRole,
-             feePercentage = excluded.feePercentage`,
-            [req.params.guildId, marketEnabled ? 1 : 0, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage || 5]
-        );
-        res.json({ success: true });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
 
 // GET Branding for a specific Guild (includes bot defaults for preview)
 app.get('/api/branding/:guildId', async (req, res) => {
