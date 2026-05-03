@@ -167,6 +167,51 @@ app.post('/api/config/:guildId', async (req, res) => {
     }
 });
 
+// ============================================
+// MARKET+ ROUTES
+// ============================================
+app.get('/api/market-config/:guildId', authenticateToken, async (req, res) => {
+    try {
+        const hasAdmin = await checkAdmin(req.user.id, req.params.guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+        const db = await getDb();
+        const config = await db.get(`SELECT * FROM market_configs WHERE guildId = ?`, [req.params.guildId]);
+        res.json(config || {});
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/market-config/:guildId', authenticateToken, async (req, res) => {
+    try {
+        const hasAdmin = await checkAdmin(req.user.id, req.params.guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+        const db = await getDb();
+        const { marketEnabled, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage } = req.body;
+        
+        await db.run(
+            `INSERT INTO market_configs (guildId, marketEnabled, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(guildId) DO UPDATE SET 
+             marketEnabled = excluded.marketEnabled,
+             forumChannelId = excluded.forumChannelId,
+             approvalChannelId = excluded.approvalChannelId,
+             ownerChannelId = excluded.ownerChannelId,
+             paymentMethods = excluded.paymentMethods,
+             middlemanRole = excluded.middlemanRole,
+             feePercentage = excluded.feePercentage`,
+            [req.params.guildId, marketEnabled ? 1 : 0, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage || 5]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // GET Branding for a specific Guild (includes bot defaults for preview)
 app.get('/api/branding/:guildId', async (req, res) => {
     const token = req.cookies.discord_token;
@@ -216,6 +261,74 @@ app.post('/api/branding/:guildId', async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Error saving branding' });
+    }
+});
+
+// GET Custom Bot Info
+app.get('/api/custom-bot/:guildId', async (req, res) => {
+    const token = req.cookies.discord_token;
+    if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+    try {
+        const db = await getDb();
+        const bot = await db.get(`SELECT botToken, clientId, status, errorMessage FROM custom_bots WHERE guildId = ?`, [req.params.guildId]);
+        if (bot) {
+            // Mask the token partially for safety
+            bot.botToken = bot.botToken ? bot.botToken.substring(0, 15) + '...' : null;
+        }
+        res.json(bot || { status: 'none' });
+    } catch (e) {
+        console.error('Error fetching custom bot:', e);
+        res.status(500).json({ error: 'Error fetching custom bot' });
+    }
+});
+
+// POST Custom Bot Connect
+app.post('/api/custom-bot/:guildId', async (req, res) => {
+    const tokenCookie = req.cookies.discord_token;
+    if (!tokenCookie) return res.status(401).json({ error: 'No autorizado' });
+
+    const { botToken } = req.body;
+    if (!botToken) return res.status(400).json({ error: 'Falta el Token del Bot' });
+
+    try {
+        const db = await getDb();
+        await db.run(
+            `INSERT INTO custom_bots (guildId, botToken, status) VALUES (?, ?, 'starting') 
+             ON CONFLICT(guildId) DO UPDATE SET botToken=excluded.botToken, status='starting'`,
+            [req.params.guildId, botToken]
+        );
+
+        const customBotManager = require('./managers/CustomBotManager');
+        const result = await customBotManager.startBot(req.params.guildId, botToken);
+
+        if (result.success) {
+            res.json({ success: true, clientId: result.client.user.id });
+        } else {
+            res.status(400).json({ error: result.error });
+        }
+    } catch (e) {
+        console.error('Error connecting custom bot:', e);
+        res.status(500).json({ error: 'Error al conectar el bot personalizado' });
+    }
+});
+
+// DELETE Custom Bot Disconnect
+app.delete('/api/custom-bot/:guildId', async (req, res) => {
+    const token = req.cookies.discord_token;
+    if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+    try {
+        const customBotManager = require('./managers/CustomBotManager');
+        await customBotManager.stopBot(req.params.guildId);
+        
+        const db = await getDb();
+        await db.run(`DELETE FROM custom_bots WHERE guildId = ?`, [req.params.guildId]);
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Error disconnecting custom bot:', e);
+        res.status(500).json({ error: 'Error al desconectar el bot personalizado' });
     }
 });
 
@@ -476,6 +589,52 @@ app.post('/api/giveaways/:guildId', async (req, res) => {
     }
 });
 
+// ============================================
+// MARKET+ ROUTES
+// ============================================
+app.get('/api/market-config/:guildId', authenticateToken, async (req, res) => {
+    try {
+        const hasAdmin = await checkAdmin(req.user.id, req.params.guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+        const db = await getDb();
+        const config = await db.get(`SELECT * FROM market_configs WHERE guildId = ?`, [req.params.guildId]);
+        res.json(config || {});
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/market-config/:guildId', authenticateToken, async (req, res) => {
+    try {
+        const hasAdmin = await checkAdmin(req.user.id, req.params.guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+        const db = await getDb();
+        const { marketEnabled, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage, marketQuestions } = req.body;
+        
+        await db.run(
+            `INSERT INTO market_configs (guildId, marketEnabled, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage, marketQuestions)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(guildId) DO UPDATE SET 
+             marketEnabled = excluded.marketEnabled,
+             forumChannelId = excluded.forumChannelId,
+             approvalChannelId = excluded.approvalChannelId,
+             ownerChannelId = excluded.ownerChannelId,
+             paymentMethods = excluded.paymentMethods,
+             middlemanRole = excluded.middlemanRole,
+             feePercentage = excluded.feePercentage,
+             marketQuestions = excluded.marketQuestions`,
+            [req.params.guildId, marketEnabled ? 1 : 0, forumChannelId, approvalChannelId, ownerChannelId, paymentMethods, middlemanRole, feePercentage || 5, marketQuestions ? JSON.stringify(marketQuestions) : null]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 
 // GET Transcripts
 app.get('/api/transcripts/:guildId', async (req, res) => {
@@ -690,5 +849,9 @@ require('./features/logging')(client);
 require('./features/serverStats')(client);
 require('./features/giveaways')(client);
 require('./features/r4Tracker')(client);
+
+// Iniciar bots personalizados
+const customBotManager = require('./managers/CustomBotManager');
+customBotManager.initAll();
 
 client.login(process.env.DISCORD_TOKEN);

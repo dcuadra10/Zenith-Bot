@@ -180,6 +180,188 @@ async function loadDashboardData() {
         const res = await fetch(`${API_URL}/modules/${gid}`);
         const mods = await res.json();
         loadModuleToggles(mods);
+// ============================================
+// ZENITH COMMAND CENTER — Full Dashboard Logic
+// ============================================
+
+const API_URL = '/api';
+let activeGuild = null;
+let editingPanelId = null;
+let editingMessageId = null;
+
+// ===== UTILITIES =====
+function getCookie(name) {
+    const v = `; ${document.cookie}`;
+    const parts = v.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+function animateValue(el, start, end, duration) {
+    if (typeof el === 'string') el = document.getElementById(el);
+    if (!el) return;
+    let startTs = null;
+    const step = (ts) => {
+        if (!startTs) startTs = ts;
+        const p = Math.min((ts - startTs) / duration, 1);
+        el.textContent = Math.floor(p * (end - start) + start);
+        if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+// ===== SCREEN MANAGEMENT =====
+function showScreen(id) {
+    ['loginScreen', 'guildScreen', 'dashboardScreen'].forEach(s => {
+        document.getElementById(s).style.display = 'none';
+    });
+    document.getElementById(id).style.display = '';
+}
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('token') === 'success') {
+        window.history.replaceState({}, document.title, '/');
+        showScreen('guildScreen');
+        fetchGuilds();
+    } else if (getCookie('discord_token')) {
+        showScreen('guildScreen');
+        fetchGuilds();
+    }
+
+    // Sidebar navigation
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.addEventListener('click', () => {
+            const page = link.dataset.page;
+            if (!page) return;
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('page-' + page);
+            if (target) target.classList.add('active');
+
+            if (page === 'transcripts') {
+                fetchTranscripts();
+            }
+        });
+    });
+
+    // Color pickers sync
+    setupColorSync('panelColor', 'panelColorHex');
+    setupColorSync('welcomeColor', 'welcomeColorHex');
+});
+
+function setupColorSync(inputId, hexId) {
+    const input = document.getElementById(inputId);
+    const hex = document.getElementById(hexId);
+    if (input && hex) {
+        input.addEventListener('input', () => { hex.textContent = input.value; });
+    }
+}
+
+// ===== GUILD LOADING =====
+async function fetchGuilds() {
+    const list = document.getElementById('guildList');
+    try {
+        const res = await fetch(`${API_URL}/guilds`);
+        if (!res.ok) throw new Error('Auth');
+        const guilds = await res.json();
+
+        if (guilds.length === 0) {
+            list.innerHTML = '<p style="color:var(--text-muted);text-align:center;width:100%;">No shared admin servers found.</p>';
+            return;
+        }
+
+        list.innerHTML = '';
+        guilds.forEach(g => {
+            const iconUrl = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : '';
+            const el = document.createElement('div');
+            el.className = 'guild-item';
+            el.innerHTML = `
+                <div class="guild-avatar">
+                    ${iconUrl ? `<img src="${iconUrl}" alt="${g.name}">` : g.name[0]}
+                </div>
+                <div class="guild-info">
+                    <h3>${g.name}</h3>
+                    <small>${g.owner ? 'Owner' : 'Admin'}</small>
+                </div>
+            `;
+            el.onclick = () => selectGuild(g);
+            list.appendChild(el);
+        });
+    } catch (e) {
+        document.cookie = 'discord_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.reload();
+    }
+}
+
+function selectGuild(guild) {
+    activeGuild = guild;
+    document.getElementById('sidebarGuildName').textContent = guild.name;
+    
+    // Sidebar server avatar
+    const avatarEl = document.getElementById('sidebarAvatar');
+    if (guild.icon) {
+        avatarEl.innerHTML = `<img src="https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png" alt="${guild.name}">`;
+    } else {
+        avatarEl.textContent = guild.name[0];
+        avatarEl.style.display = 'flex';
+        avatarEl.style.alignItems = 'center';
+        avatarEl.style.justifyContent = 'center';
+        avatarEl.style.fontWeight = '700';
+        avatarEl.style.color = 'var(--primary)';
+    }
+
+    // Topbar user
+    document.getElementById('topbarUsername').textContent = guild.owner ? 'Owner' : 'Admin';
+
+    showScreen('dashboardScreen');
+    loadDashboardData();
+}
+
+function goBackToGuilds() {
+    activeGuild = null;
+    showScreen('guildScreen');
+    // Reset to overview
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    document.querySelector('.sidebar-link[data-page="overview"]').classList.add('active');
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('page-overview').classList.add('active');
+}
+
+// ===== LOAD ALL DASHBOARD DATA =====
+async function loadDashboardData() {
+    if (!activeGuild) return;
+    const gid = activeGuild.id;
+
+    // Stats
+    try {
+        const res = await fetch(`${API_URL}/stats`);
+        const data = await res.json();
+        animateValue('statAds', 0, data.totalAds || 0, 800);
+        animateValue('statUsers', 0, data.totalUsers || 0, 800);
+    } catch (e) { console.error(e); }
+
+    // Config
+    try {
+        const res = await fetch(`${API_URL}/config/${gid}`);
+        const cfg = await res.json();
+        setVal('cfgWelcomeChannel', cfg.welcomeChannelId);
+        setVal('cfgLogChannel', cfg.logChannelId);
+        setVal('cfgLeadershipChannel', cfg.leadershipChannelId);
+        setVal('cfgTicketCategory', cfg.ticketCategoryId);
+        setVal('cfgSpreadsheetId', cfg.spreadsheetId);
+    } catch (e) { console.error(e); }
+
+    // Module configs
+    try {
+        const res = await fetch(`${API_URL}/modules/${gid}`);
+        const mods = await res.json();
+        loadModuleToggles(mods);
     } catch (e) { console.error(e); }
 
     // Panels
@@ -188,6 +370,52 @@ async function loadDashboardData() {
     fetchGiveaways();
     fetchR4Tracking();
     fetchBranding();
+    fetchCustomBot();
+    fetchMarketConfig();
+}
+
+// ===== MARKET QUESTIONS LOGIC =====
+let marketQuestionsArr = [];
+
+function addMarketQuestion() {
+    marketQuestionsArr.push({ key: 'custom_'+Date.now(), prompt: 'New Question?', isImage: false });
+    renderMarketQuestions();
+}
+
+function removeMarketQuestion(idx) {
+    marketQuestionsArr.splice(idx, 1);
+    renderMarketQuestions();
+}
+
+function updateMarketQuestion(idx, field, val) {
+    marketQuestionsArr[idx][field] = val;
+}
+
+function renderMarketQuestions() {
+    const list = document.getElementById('marketQuestionsList');
+    if (!list) return;
+    if (marketQuestionsArr.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p style="font-size:0.85rem;">Using the default 17 RoK questions.</p></div>';
+        return;
+    }
+    
+    list.innerHTML = marketQuestionsArr.map((q, i) => `
+        <div style="display:grid; grid-template-columns: 120px 1fr 100px 40px; gap:10px; align-items:center; padding:12px; background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:var(--radius-md);">
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.65rem; color:var(--text-muted);">JSON KEY</label>
+                <input class="z-input" style="font-size:0.8rem; padding:6px;" value="${q.key}" onchange="updateMarketQuestion(${i}, 'key', this.value)" placeholder="e.g. power">
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.65rem; color:var(--text-muted);">BOT PROMPT</label>
+                <input class="z-input" style="font-size:0.8rem; padding:6px;" value="${q.prompt.replace(/"/g, '&quot;')}" onchange="updateMarketQuestion(${i}, 'prompt', this.value)" placeholder="e.g. What is the Power?">
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <label style="font-size:0.65rem; color:var(--text-muted);">IS IMAGE?</label>
+                <input type="checkbox" ${q.isImage ? 'checked' : ''} onchange="updateMarketQuestion(${i}, 'isImage', this.checked)">
+            </div>
+            <button class="z-btn z-btn-danger" style="padding:6px; font-size:0.8rem; margin-top:14px;" onclick="removeMarketQuestion(${i})">✕</button>
+        </div>
+    `).join('');
 }
 
 function setVal(id, val) {
@@ -1477,5 +1705,135 @@ async function testBranding() {
         }
     } catch (e) {
         showToast('❌ Network error sending test.', true);
+    }
+}
+
+// ===== CUSTOM BOT MANAGEMENT =====
+async function fetchCustomBot() {
+    if (!activeGuild) return;
+    try {
+        const res = await fetch(`${API_URL}/custom-bot/${activeGuild.id}`);
+        const bot = await res.json();
+        
+        const stateEl = document.getElementById('cbState');
+        const errEl = document.getElementById('cbError');
+        const tokenInput = document.getElementById('customBotToken');
+        
+        if (bot && bot.status && bot.status !== 'none' && bot.status !== 'inactive') {
+            stateEl.textContent = bot.status === 'active' ? 'Online' : 'Error';
+            stateEl.style.color = bot.status === 'active' ? 'var(--accent-green)' : 'var(--accent-red)';
+            errEl.textContent = bot.status === 'active' ? `Connected as Bot ID: ${bot.clientId}` : (bot.errorMessage || 'Unknown error');
+            tokenInput.value = bot.botToken || '';
+        } else {
+            stateEl.textContent = 'Disconnected';
+            stateEl.style.color = 'var(--text-muted)';
+            errEl.textContent = 'No custom bot is currently linked to this server.';
+            tokenInput.value = '';
+        }
+    } catch (e) {
+        console.error('Error fetching custom bot:', e);
+    }
+}
+
+async function connectCustomBot() {
+    if (!activeGuild) return;
+    const token = getVal('customBotToken');
+    if (!token) return showToast('Please enter a Bot Token.', true);
+    
+    showToast('Connecting Custom Bot...');
+    try {
+        const res = await fetch(`${API_URL}/custom-bot/${activeGuild.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ botToken: token })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ Custom Bot Connected Successfully!');
+            fetchCustomBot();
+        } else {
+            showToast(`❌ Error: ${data.error}`, true);
+            fetchCustomBot();
+        }
+    } catch (e) {
+        showToast('❌ Server error connecting bot', true);
+    }
+}
+
+async function disconnectCustomBot() {
+    if (!activeGuild) return;
+    if (!confirm('Are you sure you want to disconnect your custom bot? It will immediately go offline.')) return;
+    
+    showToast('Disconnecting bot...');
+    try {
+        const res = await fetch(`${API_URL}/custom-bot/${activeGuild.id}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ Custom Bot Disconnected');
+            fetchCustomBot();
+        } else {
+            showToast(`❌ Error disconnecting`, true);
+        }
+    } catch (e) {
+        showToast('❌ Server error disconnecting bot', true);
+    }
+}
+
+// ===== MARKET+ MANAGEMENT =====
+async function fetchMarketConfig() {
+    if (!activeGuild) return;
+    try {
+        const res = await fetch(`${API_URL}/market-config/${activeGuild.id}`);
+        const cfg = await res.json();
+        
+        setCheck('toggleMarket', cfg.marketEnabled);
+        setVal('marketForumChannel', cfg.forumChannelId);
+        setVal('marketApprovalChannel', cfg.approvalChannelId);
+        setVal('marketOwnerChannel', cfg.ownerChannelId);
+        setVal('marketMiddlemanRole', cfg.middlemanRole);
+        setVal('marketFeePct', cfg.feePercentage || 5);
+        setVal('marketPaymentMethods', cfg.paymentMethods);
+        
+        if (cfg.marketQuestions) {
+            try {
+                marketQuestionsArr = JSON.parse(cfg.marketQuestions);
+            } catch(e) { marketQuestionsArr = []; }
+        } else {
+            marketQuestionsArr = [];
+        }
+        renderMarketQuestions();
+    } catch (e) {
+        console.error('Error fetching market config:', e);
+    }
+}
+
+async function saveMarketConfig() {
+    if (!activeGuild) return;
+    showToast('Saving Market+ Config...');
+    try {
+        const res = await fetch(`${API_URL}/market-config/${activeGuild.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                marketEnabled: getCheck('toggleMarket'),
+                forumChannelId: getVal('marketForumChannel'),
+                approvalChannelId: getVal('marketApprovalChannel'),
+                ownerChannelId: getVal('marketOwnerChannel'),
+                middlemanRole: getVal('marketMiddlemanRole'),
+                feePercentage: parseInt(getVal('marketFeePct')) || 5,
+                paymentMethods: getVal('marketPaymentMethods'),
+                marketQuestions: marketQuestionsArr.length > 0 ? marketQuestionsArr : null
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ Market+ Config Saved!');
+        } else {
+            showToast('❌ Error saving config', true);
+        }
+    } catch (e) {
+        showToast('❌ Server error saving config', true);
     }
 }

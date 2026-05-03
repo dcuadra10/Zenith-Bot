@@ -40,7 +40,10 @@ function buildColumnMap(cols) {
         'ticketId', 'logContent', 'closedAt',
         'weekId', 'messages', 'ads', 'excused',
         'uuid', 'optJson', 'answersJson',
-        'winnersCount', 'endTime', 'prize', 'requiredRole', 'pingRole', 'durationMs', 'status'
+        'winnersCount', 'endTime', 'prize', 'requiredRole', 'pingRole', 'durationMs', 'status',
+        'botToken', 'clientId', 'errorMessage',
+        'marketEnabled', 'forumChannelId', 'approvalChannelId', 'ownerChannelId', 'paymentMethods', 'middlemanRole', 'feePercentage',
+        'sellerId', 'dataJson', 'imagesJson', 'forumThreadId', 'buyerId', 'middlemanId', 'offerJson', 'listingCode'
     ];
     knownColumns.forEach(col => {
         columnNameMap[col.toLowerCase()] = col;
@@ -241,12 +244,59 @@ async function getDb() {
                 r4TrackingAdQuota INTEGER DEFAULT 40,
                 r4TrackingMsgQuota INTEGER DEFAULT 245
             );
+
+            CREATE TABLE IF NOT EXISTS custom_bots (
+                guildId TEXT PRIMARY KEY,
+                botToken TEXT NOT NULL,
+                clientId TEXT,
+                status TEXT DEFAULT 'inactive',
+                errorMessage TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS market_configs (
+                guildId TEXT PRIMARY KEY,
+                marketEnabled INTEGER DEFAULT 0,
+                forumChannelId TEXT,
+                approvalChannelId TEXT,
+                ownerChannelId TEXT,
+                paymentMethods TEXT,
+                middlemanRole TEXT,
+                feePercentage INTEGER DEFAULT 5,
+                marketQuestions TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS market_listings (
+                code TEXT PRIMARY KEY,
+                guildId TEXT,
+                sellerId TEXT,
+                status TEXT DEFAULT 'pending',
+                price TEXT,
+                dataJson TEXT,
+                imagesJson TEXT,
+                forumThreadId TEXT,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS market_transactions (
+                id TEXT PRIMARY KEY,
+                listingCode TEXT,
+                guildId TEXT,
+                buyerId TEXT,
+                sellerId TEXT,
+                middlemanId TEXT,
+                status TEXT DEFAULT 'offer_sent',
+                price TEXT,
+                offerJson TEXT,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         `);
         
         const ticketCols = ['ticketsMaxActive INTEGER DEFAULT 2', 'ticketsTranscriptChannel TEXT', 'countingMath INTEGER DEFAULT 0', 'countingLastUser TEXT', 'ticketCategoryId TEXT', 'ticketsApprovalChannel TEXT', 'r4TrackingEnabled INTEGER DEFAULT 0', 'r4TrackingRole TEXT', 'r4TrackingAdQuota INTEGER DEFAULT 40', 'r4TrackingMsgQuota INTEGER DEFAULT 245', 'welcomeImage TEXT', 'welcomeUseEmbed INTEGER DEFAULT 1', 'swearJarEnabled INTEGER DEFAULT 0', 'swearJarChannel TEXT', 'swearJarWords TEXT', 'swearJarPing INTEGER DEFAULT 1'];
         for (const col of ticketCols) {
             try { await dbInstance.exec(`ALTER TABLE module_configs ADD COLUMN ${col}`); } catch (e) {}
         }
+        try { await dbInstance.exec(`ALTER TABLE market_configs ADD COLUMN marketQuestions TEXT`); } catch (e) {}
 
         // Auto-migrate guild_configs columns
         const guildCols = ['welcomeChannelId', 'logChannelId', 'ticketCategoryId', 'brandingName', 'brandingAvatar'];
