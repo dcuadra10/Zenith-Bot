@@ -301,6 +301,46 @@ function renderMarketForumChannels() {
     `).join('');
 }
 
+// ===== MIDDLEMAN PAYMENTS LOGIC =====
+let mmPaymentMethodsArr = [];
+
+function addMmPaymentMethod() {
+    mmPaymentMethodsArr.push({ userId: '', details: '' });
+    renderMmPaymentMethods();
+}
+
+function removeMmPaymentMethod(idx) {
+    mmPaymentMethodsArr.splice(idx, 1);
+    renderMmPaymentMethods();
+}
+
+function updateMmPaymentMethod(idx, field, val) {
+    mmPaymentMethodsArr[idx][field] = val;
+}
+
+function renderMmPaymentMethods() {
+    const list = document.getElementById('mmPaymentList');
+    if (!list) return;
+    if (mmPaymentMethodsArr.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p style="font-size:0.85rem;">No middleman-specific payment info defined.</p></div>';
+        return;
+    }
+    
+    list.innerHTML = mmPaymentMethodsArr.map((m, i) => `
+        <div style="display:grid; grid-template-columns: 200px 1fr 40px; gap:10px; align-items:start; padding:10px; background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:var(--radius-md);">
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.65rem; color:var(--text-muted);">MIDDLEMAN USER ID</label>
+                <input class="z-input" style="font-size:0.8rem; padding:6px;" value="${m.userId}" onchange="updateMmPaymentMethod(${i}, 'userId', this.value)" placeholder="e.g. 123456789">
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.65rem; color:var(--text-muted);">PAYMENT DETAILS</label>
+                <textarea class="z-input" style="font-size:0.8rem; padding:6px;" rows="2" onchange="updateMmPaymentMethod(${i}, 'details', this.value)" placeholder="PayPal: mm@paypal.com">${m.details}</textarea>
+            </div>
+            <button class="z-btn z-btn-danger" style="padding:6px; font-size:0.8rem; margin-top:14px;" onclick="removeMmPaymentMethod(${i})">✕</button>
+        </div>
+    `).join('');
+}
+
 function setVal(id, val) {
     const el = document.getElementById(id);
     if (el) el.value = val || '';
@@ -1694,6 +1734,15 @@ async function fetchMarketConfig() {
         setVal('middlemanFeePct', cfg.middlemanFeePct || 5);
         setVal('marketPaymentMethods', cfg.paymentMethods);
         
+        if (cfg.mmPaymentMethods) {
+            try {
+                mmPaymentMethodsArr = JSON.parse(cfg.mmPaymentMethods);
+            } catch(e) { mmPaymentMethodsArr = []; }
+        } else {
+            mmPaymentMethodsArr = [];
+        }
+        renderMmPaymentMethods();
+
         if (cfg.marketQuestions) {
             try {
                 marketQuestionsArr = JSON.parse(cfg.marketQuestions);
@@ -1722,6 +1771,7 @@ async function saveMarketConfig() {
                 marketFeePct: parseInt(getVal('marketFeePct')) || 5,
                 middlemanFeePct: parseInt(getVal('middlemanFeePct')) || 5,
                 paymentMethods: getVal('marketPaymentMethods'),
+                mmPaymentMethods: JSON.stringify(mmPaymentMethodsArr),
                 marketQuestions: marketQuestionsArr.length > 0 ? JSON.stringify(marketQuestionsArr) : null
             })
         });

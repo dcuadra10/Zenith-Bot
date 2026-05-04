@@ -642,10 +642,20 @@
                             <label>Middleman Fee (Buyer) %</label>
                             <input type="number" class="z-input" id="middlemanFeePct" placeholder="5" value="5">
                         </div>
-                        <div class="z-input-group">
-                            <label>Payment Methods Text</label>
-                            <textarea class="z-input" id="marketPaymentMethods" rows="3" placeholder="PayPal: me@paypal.com\nWise: me@wise.com"></textarea>
+                        <div class="z-input-group" style="grid-column: span 2;">
+                            <label>🏦 Market Owner Payment Methods (for Market Fee)</label>
+                            <textarea class="z-input" id="marketPaymentMethods" rows="2" placeholder="PayPal: owner@paypal.com\nWise: owner@wise.com"></textarea>
+                            <small style="color:var(--text-muted); font-size:0.75rem;">These will be shown to the SELLER when they need to pay the Market Fee.</small>
                         </div>
+                    </div>
+                    
+                    <div style="margin-top:30px; border-top:1px solid var(--border-medium); padding-top:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <h3>🤝 Middleman Payment Methods</h3>
+                            <button class="z-btn z-btn-secondary z-btn-sm" onclick="addMmPaymentMethod()">+ Add Middleman Info</button>
+                        </div>
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Define specific payment details for each individual Middleman. These will be shown to the BUYER.</p>
+                        <div id="mmPaymentList" style="display:flex; flex-direction:column; gap:10px;"></div>
                     </div>
                     
                     <div style="margin-top:30px; border-top:1px solid var(--border-medium); padding-top:20px;">

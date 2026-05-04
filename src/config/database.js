@@ -263,7 +263,8 @@ async function getDb() {
                 middlemanRole TEXT,
                 marketFeePct INTEGER DEFAULT 5,
                 middlemanFeePct INTEGER DEFAULT 5,
-                marketQuestions TEXT
+                marketQuestions TEXT,
+                mmPaymentMethods TEXT
             );
 
             CREATE TABLE IF NOT EXISTS market_listings (

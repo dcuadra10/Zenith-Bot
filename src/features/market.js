@@ -522,17 +522,28 @@ async function handleMarketOfferSubmit(interaction) {
     
     await db.run(`UPDATE market_transactions SET price = ?, status = 'offer_sent' WHERE id = ?`, [price, txId]);
     const tx = await db.get(`SELECT * FROM market_transactions WHERE id = ?`, [txId]);
+    const config = await db.get(`SELECT * FROM market_configs WHERE guildId = ?`, [tx.guildId]);
 
     await interaction.reply({ content: `✅ Offer of **${price}** has been sent to the seller via DM. Awaiting their response.`, ephemeral: false });
 
-    // Notify Buyer in ticket about their fee
+    // Calculate Fees
     const mmFeePct = config.middlemanFeePct || 5;
     let numericPrice = parseFloat(price.replace(/[^0-9.]/g, '')) || 0;
     const mmFeeAmount = (numericPrice * (mmFeePct / 100)).toFixed(2);
     const totalBuyerPays = (numericPrice + parseFloat(mmFeeAmount)).toFixed(2);
 
+    // Find Middleman Specific Payment Info
+    let mmPaymentDetails = 'Please ask the Middleman for their payment details.';
+    if (config.mmPaymentMethods) {
+        try {
+            const mmPayments = JSON.parse(config.mmPaymentMethods);
+            const match = mmPayments.find(p => p.userId === tx.middlemanId);
+            if (match && match.details) mmPaymentDetails = match.details;
+        } catch(e) {}
+    }
+
     await interaction.channel.send({
-        content: `📝 **Purchase Summary for Buyer:**\n- Agreed Price: **${price}**\n- Middleman Fee (${mmFeePct}%): **$${mmFeeAmount}**\n- **Total to pay:** **$${totalBuyerPays}**\n\n*Buyer pays the Middleman Fee separately.*`
+        content: `📝 **Purchase Summary for Buyer:**\n- Agreed Price: **${price}**\n- Middleman Fee (${mmFeePct}%): **$${mmFeeAmount}**\n- **Total to pay:** **$${totalBuyerPays}**\n\n**Middleman Payment Methods:**\n${mmPaymentDetails}\n\n*Buyer pays the Middleman Fee separately.*`
     });
 
     // DM the seller
@@ -619,7 +630,7 @@ async function handleMarketAcceptSubmit(interaction) {
     const feeAmount = (numericPrice * (feePct / 100)).toFixed(2);
 
     await interaction.reply({ 
-        content: `✅ You have accepted the offer and provided the credentials.\n\n**Next Step:** You must pay the Market Fee of **${feePct}%** ($${feeAmount}) before the Middleman proceeds.\n\n**Payment Methods:**\n${config.paymentMethods || 'Please ask the Middleman for payment details.'}\n\nOnce paid, the Market Owner will verify it.`, 
+        content: `✅ You have accepted the offer and provided the credentials.\n\n**Next Step:** You must pay the Market Fee of **${feePct}%** ($${feeAmount}) to the **Market Owner** before the Middleman proceeds.\n\n**Owner Payment Methods:**\n${config.paymentMethods || 'Please ask the Middleman for the owner\'s payment details.'}\n\nOnce paid, the Market Owner will verify it.`, 
         ephemeral: true 
     });
 
