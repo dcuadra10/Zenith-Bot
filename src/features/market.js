@@ -62,22 +62,21 @@ const DEFAULT_SELL_QUESTIONS = [
     { key: 'gems', prompt: '<:gem1:1497401988651159573> **6. How many Gems?**\n*(e.g. 50k)*' },
     { key: 'skins', prompt: '<:skin:1497410065492086965> **7. How many Legendary City Skins?**\n*(e.g. 5)*' },
     { key: 'equipment', prompt: '<:equip:1497405923189194863> **8. How many Legendary Equipment pieces?**\n*(e.g. 10)*' },
-    { key: 'formations', prompt: '<:formation:1497410649284673586> **9. How many Legendary Formations?**\n*(e.g. 10)*' },
-    { key: 'passports', prompt: '<:passport:1495891858717671454> **10. How many Passports?**\n*(e.g. 100)*' },
-    { key: 'goldHeads', prompt: '<:gh:1497401912142729257> **11. How many Gold Heads?**\n*(e.g. 100)*' },
-    { key: 'commanders', prompt: '<:commander:1497711538906337451> **12. How many Expertise Legendary Commanders?**\n*(e.g. 10)*' },
-    { key: 'food', prompt: '<:food:1497402253814796480> **13. Food?**\n*(e.g. 10b bag/100b city)*' },
-    { key: 'wood', prompt: '<:wood:1497402184629878804> **14. Wood?**\n*(e.g. 2b bag/20b city)*' },
-    { key: 'stone', prompt: '<:stone:1497402113393819792> **15. Stone?**\n*(e.g. 2b bag/20b city)*' },
-    { key: 'gold', prompt: '<:gold:1497401842823598151> **16. Gold?**\n*(e.g. 2b)*' },
-    { key: 'unispeed', prompt: '<:unispeed:1497406105007952022> **17. Universal Speedups?**\n*(e.g. 1000 days)*' },
-    { key: 'healspeed', prompt: '<:healspeed:1497406233534140586> **18. Healing Speedups?**\n*(e.g. 300 days)*' },
-    { key: 'trainspeed', prompt: '<:trainspeed:1497406047797776524> **19. Training Speedups?**\n*(e.g. 200 days)*' },
-    { key: 'age', prompt: '<:days:1497712897181089802> **20. Account Age in days?**\n*(e.g. 1000 days)*' },
-    { key: 'migrate', prompt: '✈️ **21. Is the account ready to migrate?**\n*(Yes / No)*' },
-    { key: 'kvk', prompt: '⚔️ **22. Which KvK is it in?**\n*(1, 2, 3, or SOC)*' },
-    { key: 'notes', prompt: '<:notes:1500635402820780232> **23. Any additional notes?**\n*(e.g. N/A or details about farms)*' },
-    { key: 'images', prompt: '📸 **24. Please upload screenshots proving this information.**\n*(Upload all images in a single message, then wait).*', isImage: true }
+    { key: 'passports', prompt: '<:passport:1495891858717671454> **9. How many Passports?**\n*(e.g. 100)*' },
+    { key: 'goldHeads', prompt: '<:gh:1497401912142729257> **10. How many Gold Heads?**\n*(e.g. 100)*' },
+    { key: 'commanders', prompt: '<:commander:1497711538906337451> **11. How many Expertise Legendary Commanders?**\n*(e.g. 10)*' },
+    { key: 'food', prompt: '<:food:1497402253814796480> **12. Food?**\n*(e.g. 10b bag/100b city)*' },
+    { key: 'wood', prompt: '<:wood:1497402184629878804> **13. Wood?**\n*(e.g. 2b bag/20b city)*' },
+    { key: 'stone', prompt: '<:stone:1497402113393819792> **14. Stone?**\n*(e.g. 2b bag/20b city)*' },
+    { key: 'gold', prompt: '<:gold:1497401842823598151> **15. Gold?**\n*(e.g. 2b)*' },
+    { key: 'unispeed', prompt: '<:unispeed:1497406105007952022> **16. Universal Speedups?**\n*(e.g. 1000 days)*' },
+    { key: 'healspeed', prompt: '<:healspeed:1497406233534140586> **17. Healing Speedups?**\n*(e.g. 300 days)*' },
+    { key: 'trainspeed', prompt: '<:trainspeed:1497406047797776524> **18. Training Speedups?**\n*(e.g. 200 days)*' },
+    { key: 'age', prompt: '<:days:1497712897181089802> **19. Account Age in days?**\n*(e.g. 1000 days)*' },
+    { key: 'migrate', prompt: '✈️ **20. Is the account ready to migrate?**\n*(Yes / No)*' },
+    { key: 'kvk', prompt: '⚔️ **21. Which KvK is it in?**\n*(1, 2, 3, or SOC)*' },
+    { key: 'notes', prompt: '<:notes:1500635402820780232> **22. Any additional notes?**\n*(e.g. N/A or details about farms)*' },
+    { key: 'images', prompt: '📸 **23. Please upload screenshots proving this information.**\n*(Upload all images in a single message, then wait).*', isImage: true }
 ];
 
 async function startSellFlow(channel, user, config, guild) {
@@ -282,7 +281,6 @@ async function handleMarketApprove(interaction) {
 <:gem1:1497401988651159573> **Gems:** ${data.gems || 'N/A'}
 <:skin:1497410065492086965> **Legendary City Skins:** ${data.skins || 'N/A'}
 <:equip:1497405923189194863> **Equipment:** ${data.equipment || 'N/A'}
-<:formation:1497410649284673586> **Formations:** ${data.formations || 'N/A'}
 <:passport:1495891858717671454> **Passports:** ${data.passports || 'N/A'}
 <:gh:1497401912142729257> **Gold Heads:** ${data.goldHeads || 'N/A'}
 <:commander:1497711538906337451> **Expertise Legendary Commanders:** ${data.commanders || 'N/A'}
