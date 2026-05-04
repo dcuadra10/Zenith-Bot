@@ -193,9 +193,16 @@ async function finishSellFlow(channel, user, guild, answers, images, config) {
     if (config.approvalChannelId) {
         const approvalChannel = guild.channels.cache.get(config.approvalChannelId);
         if (approvalChannel) {
+            let adminDesc = `**Seller:** ${user}\n`;
+            for (const [k, v] of Object.entries(answers)) {
+                if (v && v.toString().length > 0) {
+                    adminDesc += `**${k.toUpperCase()}:** ${v}\n`;
+                }
+            }
+
             const adminEmbed = new EmbedBuilder()
                 .setTitle(`📥 New Account Listing Approval: ${code}`)
-                .setDescription(`**Seller:** ${user}\n**Price:** ${answers.price}\n**Power:** ${answers.power}\n**KP:** ${answers.kp}`)
+                .setDescription(adminDesc.substring(0, 4000)) // Discord limit safety
                 .setColor('#e67e22');
             
             if (images.length > 0) adminEmbed.setImage(images[0]);
