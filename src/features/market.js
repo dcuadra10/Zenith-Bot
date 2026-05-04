@@ -74,8 +74,10 @@ const DEFAULT_SELL_QUESTIONS = [
     { key: 'healspeed', prompt: '<:healspeed:1497406233534140586> **18. Healing Speedups?**\n*(e.g. 300 days)*' },
     { key: 'trainspeed', prompt: '<:trainspeed:1497406047797776524> **19. Training Speedups?**\n*(e.g. 200 days)*' },
     { key: 'age', prompt: '<:days:1497712897181089802> **20. Account Age in days?**\n*(e.g. 1000 days)*' },
-    { key: 'notes', prompt: '<:notes:1500635402820780232> **21. Any additional notes?**\n*(e.g. N/A or details about farms)*' },
-    { key: 'images', prompt: '📸 **22. Please upload screenshots proving this information.**\n*(Upload all images in a single message, then wait).*', isImage: true }
+    { key: 'migrate', prompt: '✈️ **21. Is the account ready to migrate?**\n*(Yes / No)*' },
+    { key: 'kvk', prompt: '⚔️ **22. Which KvK is it in?**\n*(1, 2, 3, or SOC)*' },
+    { key: 'notes', prompt: '<:notes:1500635402820780232> **23. Any additional notes?**\n*(e.g. N/A or details about farms)*' },
+    { key: 'images', prompt: '📸 **24. Please upload screenshots proving this information.**\n*(Upload all images in a single message, then wait).*', isImage: true }
 ];
 
 async function startSellFlow(channel, user, config, guild) {
@@ -220,15 +222,54 @@ async function handleMarketApprove(interaction) {
     if (!listing) return interaction.reply({ content: '❌ Listing not found.', ephemeral: true });
     
     if (listing.status !== 'pending') return interaction.reply({ content: '❌ Listing is no longer pending.', ephemeral: true });
-
+    
     const config = await db.get(`SELECT * FROM market_configs WHERE guildId = ?`, [interaction.guildId]);
-    if (!config || !config.forumChannelId) return interaction.reply({ content: '❌ Forum channel not configured in dashboard.', ephemeral: true });
-
-    const forumChannel = interaction.guild.channels.cache.get(config.forumChannelId);
-    if (!forumChannel || forumChannel.type !== ChannelType.GuildForum) return interaction.reply({ content: '❌ Invalid forum channel.', ephemeral: true });
+    if (!config) return interaction.reply({ content: '❌ Market configuration not found.', ephemeral: true });
 
     const data = JSON.parse(listing.dataJson);
     const images = JSON.parse(listing.imagesJson);
+    const numericPrice = parseFloat(data.price?.toString().replace(/[^0-9.]/g, '')) || 0;
+
+    // Determine correct forum channel
+    let targetChannelId = null;
+    if (config.forumChannelId && config.forumChannelId.startsWith('[')) {
+        try {
+            const channels = JSON.parse(config.forumChannelId);
+            const match = channels.find(c => numericPrice >= c.min && numericPrice <= c.max);
+            if (match) targetChannelId = match.channelId;
+        } catch(e) {}
+    } else {
+        targetChannelId = config.forumChannelId;
+    }
+
+    if (!targetChannelId) return interaction.reply({ content: '❌ No matching forum channel found for this price range.', ephemeral: true });
+
+    const forumChannel = interaction.guild.channels.cache.get(targetChannelId);
+    if (!forumChannel || forumChannel.type !== ChannelType.GuildForum) return interaction.reply({ content: '❌ Invalid or missing forum channel.', ephemeral: true });
+
+    // Handle Tags
+    const appliedTags = [];
+    if (forumChannel.availableTags) {
+        // Migration Tag
+        if (data.migrate && data.migrate.toLowerCase().includes('yes')) {
+            const migTag = forumChannel.availableTags.find(t => t.name.toLowerCase().includes('migrate') || t.name.toLowerCase().includes('ready'));
+            if (migTag) appliedTags.push(migTag.id);
+        }
+        // KvK Tag
+        if (data.kvk) {
+            const kvkInput = data.kvk.toLowerCase();
+            let kvkSearch = '';
+            if (kvkInput.includes('soc')) kvkSearch = 'soc';
+            else if (kvkInput.includes('1')) kvkSearch = 'kvk 1';
+            else if (kvkInput.includes('2')) kvkSearch = 'kvk 2';
+            else if (kvkInput.includes('3')) kvkSearch = 'kvk 3';
+            
+            if (kvkSearch) {
+                const kvkTag = forumChannel.availableTags.find(t => t.name.toLowerCase().includes(kvkSearch));
+                if (kvkTag) appliedTags.push(kvkTag.id);
+            }
+        }
+    }
 
     // Build the requested forum post text
     let text = `# SVIP Account
@@ -257,12 +298,14 @@ Speedups:
 > <:healspeed:1497406233534140586> ${data.healspeed || 'N/A'}
 > <:trainspeed:1497406047797776524> ${data.trainspeed || 'N/A'}
 
+✈️ **Ready to Migrate:** ${data.migrate || 'N/A'}
+⚔️ **KvK Stage:** ${data.kvk || 'N/A'}
 <:days:1497712897181089802> **Account Age:** ${data.age || 'N/A'} <:notes:1500635402820780232> **Notes:** ${data.notes || 'N/A'}
 
 > **Code:** ${code}`;
 
     // Append any extra keys dynamically
-    const defaultKeys = ['price','power','kp','deaths','vip','gems','skins','equipment','formations','passports','goldHeads','commanders','food','wood','stone','gold','unispeed','healspeed','trainspeed','age','notes','images'];
+    const defaultKeys = ['price','power','kp','deaths','vip','gems','skins','equipment','formations','passports','goldHeads','commanders','food','wood','stone','gold','unispeed','healspeed','trainspeed','age','notes','images','migrate','kvk'];
     let extras = '';
     for (const [k, v] of Object.entries(data)) {
         if (!defaultKeys.includes(k)) extras += `\n**${k.toUpperCase()}:** ${v}`;
@@ -276,6 +319,7 @@ Speedups:
         const thread = await forumChannel.threads.create({
             name: `${data.power} Power | ${data.price}$`,
             message: messagePayload,
+            appliedTags: appliedTags,
             autoArchiveDuration: 10080
         });
 

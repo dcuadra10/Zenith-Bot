@@ -257,6 +257,50 @@ function renderMarketQuestions() {
     `).join('');
 }
 
+// ===== MARKET CHANNELS LOGIC =====
+let marketForumChannelsArr = [];
+
+function addMarketForumChannel() {
+    marketForumChannelsArr.push({ min: 0, max: 999999, channelId: '' });
+    renderMarketForumChannels();
+}
+
+function removeMarketForumChannel(idx) {
+    marketForumChannelsArr.splice(idx, 1);
+    renderMarketForumChannels();
+}
+
+function updateMarketForumChannel(idx, field, val) {
+    marketForumChannelsArr[idx][field] = val;
+}
+
+function renderMarketForumChannels() {
+    const list = document.getElementById('marketForumChannelsList');
+    if (!list) return;
+    if (marketForumChannelsArr.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p style="font-size:0.85rem;">No channels defined. Bot will not be able to post listings.</p></div>';
+        return;
+    }
+    
+    list.innerHTML = marketForumChannelsArr.map((c, i) => `
+        <div style="display:grid; grid-template-columns: 100px 100px 1fr 40px; gap:10px; align-items:center; padding:10px; background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:var(--radius-md);">
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.65rem; color:var(--text-muted);">MIN PRICE ($)</label>
+                <input type="number" class="z-input" style="font-size:0.8rem; padding:6px;" value="${c.min}" onchange="updateMarketForumChannel(${i}, 'min', parseFloat(this.value))">
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.65rem; color:var(--text-muted);">MAX PRICE ($)</label>
+                <input type="number" class="z-input" style="font-size:0.8rem; padding:6px;" value="${c.max}" onchange="updateMarketForumChannel(${i}, 'max', parseFloat(this.value))">
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.65rem; color:var(--text-muted);">FORUM CHANNEL ID</label>
+                <input class="z-input" style="font-size:0.8rem; padding:6px;" value="${c.channelId}" onchange="updateMarketForumChannel(${i}, 'channelId', this.value)" placeholder="e.g. 123456789">
+            </div>
+            <button class="z-btn z-btn-danger" style="padding:6px; font-size:0.8rem; margin-top:14px;" onclick="removeMarketForumChannel(${i})">✕</button>
+        </div>
+    `).join('');
+}
+
 function setVal(id, val) {
     const el = document.getElementById(id);
     if (el) el.value = val || '';
@@ -1628,7 +1672,21 @@ async function fetchMarketConfig() {
         const cfg = await res.json();
         
         setCheck('toggleMarket', cfg.marketEnabled);
-        setVal('marketForumChannel', cfg.forumChannelId);
+        
+        // Handle Price-Based Channels (can be a single ID string or a JSON array)
+        if (cfg.forumChannelId && cfg.forumChannelId.startsWith('[')) {
+            try {
+                marketForumChannelsArr = JSON.parse(cfg.forumChannelId);
+            } catch(e) { 
+                marketForumChannelsArr = [{ min: 0, max: 999999, channelId: cfg.forumChannelId }]; 
+            }
+        } else if (cfg.forumChannelId) {
+            marketForumChannelsArr = [{ min: 0, max: 999999, channelId: cfg.forumChannelId }];
+        } else {
+            marketForumChannelsArr = [];
+        }
+        renderMarketForumChannels();
+
         setVal('marketApprovalChannel', cfg.approvalChannelId);
         setVal('marketOwnerChannel', cfg.ownerChannelId);
         setVal('marketMiddlemanRole', cfg.middlemanRole);
@@ -1656,13 +1714,13 @@ async function saveMarketConfig() {
             method: 'POST',
             body: JSON.stringify({
                 marketEnabled: getCheck('toggleMarket'),
-                forumChannelId: getVal('marketForumChannel'),
+                forumChannelId: JSON.stringify(marketForumChannelsArr),
                 approvalChannelId: getVal('marketApprovalChannel'),
                 ownerChannelId: getVal('marketOwnerChannel'),
                 middlemanRole: getVal('marketMiddlemanRole'),
                 feePercentage: parseInt(getVal('marketFeePct')) || 5,
                 paymentMethods: getVal('marketPaymentMethods'),
-                marketQuestions: marketQuestionsArr.length > 0 ? marketQuestionsArr : null
+                marketQuestions: marketQuestionsArr.length > 0 ? JSON.stringify(marketQuestionsArr) : null
             })
         });
         const data = await res.json();
