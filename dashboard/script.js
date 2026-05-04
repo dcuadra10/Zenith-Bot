@@ -1690,7 +1690,8 @@ async function fetchMarketConfig() {
         setVal('marketApprovalChannel', cfg.approvalChannelId);
         setVal('marketOwnerChannel', cfg.ownerChannelId);
         setVal('marketMiddlemanRole', cfg.middlemanRole);
-        setVal('marketFeePct', cfg.feePercentage || 5);
+        setVal('marketFeePct', cfg.marketFeePct || 5);
+        setVal('middlemanFeePct', cfg.middlemanFeePct || 5);
         setVal('marketPaymentMethods', cfg.paymentMethods);
         
         if (cfg.marketQuestions) {
@@ -1718,7 +1719,8 @@ async function saveMarketConfig() {
                 approvalChannelId: getVal('marketApprovalChannel'),
                 ownerChannelId: getVal('marketOwnerChannel'),
                 middlemanRole: getVal('marketMiddlemanRole'),
-                feePercentage: parseInt(getVal('marketFeePct')) || 5,
+                marketFeePct: parseInt(getVal('marketFeePct')) || 5,
+                middlemanFeePct: parseInt(getVal('middlemanFeePct')) || 5,
                 paymentMethods: getVal('marketPaymentMethods'),
                 marketQuestions: marketQuestionsArr.length > 0 ? JSON.stringify(marketQuestionsArr) : null
             })

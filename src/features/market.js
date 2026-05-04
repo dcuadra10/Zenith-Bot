@@ -525,12 +525,26 @@ async function handleMarketOfferSubmit(interaction) {
 
     await interaction.reply({ content: `✅ Offer of **${price}** has been sent to the seller via DM. Awaiting their response.`, ephemeral: false });
 
+    // Notify Buyer in ticket about their fee
+    const mmFeePct = config.middlemanFeePct || 5;
+    let numericPrice = parseFloat(price.replace(/[^0-9.]/g, '')) || 0;
+    const mmFeeAmount = (numericPrice * (mmFeePct / 100)).toFixed(2);
+    const totalBuyerPays = (numericPrice + parseFloat(mmFeeAmount)).toFixed(2);
+
+    await interaction.channel.send({
+        content: `📝 **Purchase Summary for Buyer:**\n- Agreed Price: **${price}**\n- Middleman Fee (${mmFeePct}%): **$${mmFeeAmount}**\n- **Total to pay:** **$${totalBuyerPays}**\n\n*Buyer pays the Middleman Fee separately.*`
+    });
+
     // DM the seller
     const seller = await interaction.client.users.fetch(tx.sellerId).catch(()=>null);
     if (seller) {
+        const marketFeePct = config.marketFeePct || 5;
+        const sellerMarketFee = (numericPrice * (marketFeePct / 100)).toFixed(2);
+        const netToSeller = (numericPrice - parseFloat(sellerMarketFee)).toFixed(2);
+
         const embed = new EmbedBuilder()
             .setTitle(`💰 New Offer for your Account ${tx.listingCode}`)
-            .setDescription(`A buyer, represented by Middleman <@${interaction.user.id}>, has sent you an offer.\n\n**Offer Amount:** ${price}\n\nDo you accept this offer?`)
+            .setDescription(`A buyer, represented by Middleman <@${interaction.user.id}>, has sent you an offer.\n\n**Offer Amount:** ${price}\n\n**Note on Fees:**\n- Market Fee (${marketFeePct}%): -$${sellerMarketFee}\n- **Net amount you receive:** **$${netToSeller}**\n\nDo you accept this offer?`)
             .setColor('#2ecc71');
         
         const row = new ActionRowBuilder().addComponents(
@@ -598,7 +612,7 @@ async function handleMarketAcceptSubmit(interaction) {
     await db.run(`UPDATE market_transactions SET status = 'fee_pending', offerJson = ? WHERE id = ?`, [JSON.stringify(credentials), txId]);
     
     const config = await db.get(`SELECT * FROM market_configs WHERE guildId = ?`, [tx.guildId]);
-    const feePct = config.feePercentage || 5;
+    const feePct = config.marketFeePct || 5;
     
     let numericPrice = parseFloat(tx.price.replace(/[^0-9.]/g, ''));
     if (isNaN(numericPrice)) numericPrice = 0;

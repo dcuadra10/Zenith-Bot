@@ -261,7 +261,8 @@ async function getDb() {
                 ownerChannelId TEXT,
                 paymentMethods TEXT,
                 middlemanRole TEXT,
-                feePercentage INTEGER DEFAULT 5,
+                marketFeePct INTEGER DEFAULT 5,
+                middlemanFeePct INTEGER DEFAULT 5,
                 marketQuestions TEXT
             );
 
