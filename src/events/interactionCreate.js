@@ -264,23 +264,11 @@ module.exports = {
                 await db.run(`DELETE FROM pending_tickets WHERE uuid = ?`, [uuid]);
                 await interaction.update({ content: `❌ Application declined by <@${interaction.user.id}>.\n**Reason:** ${reason}`, embeds: interaction.message.embeds, components: [] });
             }
-            else if (interaction.customId.startsWith('modal_market_reject_')) {
-                const code = interaction.customId.replace('modal_market_reject_', '');
-                const reason = interaction.fields.getTextInputValue('rejectReason');
-                
-                const db = await getDb();
-                const listing = await db.get(`SELECT * FROM market_listings WHERE code = ?`, [code]);
-                if (!listing) return interaction.reply({ content: '❌ Listing not found.', ephemeral: true });
-
-                await db.run(`UPDATE market_listings SET status = 'rejected' WHERE code = ?`, [code]);
-                
-                const seller = await interaction.client.users.fetch(listing.sellerId).catch(() => null);
-                if (seller) {
-                    await seller.send(`❌ Your market listing **${code}** was rejected.\n**Reason:** ${reason}`).catch(() => {});
-                }
-
-                await interaction.update({ content: `❌ Listing **${code}** rejected by <@${interaction.user.id}>.\n**Reason:** ${reason}`, embeds: interaction.message.embeds, components: [] });
+            else if (interaction.customId.startsWith('modal_market_')) {
+                const { handleMarketInteraction } = require('../features/market');
+                await handleMarketInteraction(interaction);
             }
+        }
         }
     },
 };

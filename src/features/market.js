@@ -2,27 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType,
 const { getDb } = require('../config/database');
 const crypto = require('crypto');
 
-async function handleMarketInteraction(interaction) {
-    if (!interaction.isButton()) return;
-    
-    if (interaction.customId === 'market_btn_sell') {
-        await handleMarketSellInit(interaction);
-    } else if (interaction.customId === 'market_btn_buy') {
-        await handleMarketBuyInit(interaction);
-    } else if (interaction.customId.startsWith('market_approve_')) {
-        await handleMarketApprove(interaction);
-    } else if (interaction.customId.startsWith('market_reject_')) {
-        await handleMarketReject(interaction);
-    } else if (interaction.customId.startsWith('market_buyoffer_')) {
-        await handleMarketSendOffer(interaction);
-    } else if (interaction.customId.startsWith('market_acceptoffer_')) {
-        await handleMarketAcceptOffer(interaction);
-    } else if (interaction.customId.startsWith('market_fee_paid_')) {
-        await handleMarketFeeConfirmed(interaction);
-    } else if (interaction.customId.startsWith('market_complete_')) {
-        await handleMarketComplete(interaction);
-    }
-}
+// Market Interactions are handled at the bottom of the file
 
 async function handleMarketSellInit(interaction) {
     const db = await getDb();
@@ -392,6 +372,7 @@ async function handleMarketInteraction(interaction) {
 }
 
 async function handleMarketBuyInit(interaction) {
+    console.log(`[MARKET] Buy button clicked by ${interaction.user.tag}`);
     const db = await getDb();
     const config = await db.get(`SELECT * FROM market_configs WHERE guildId = ?`, [interaction.guildId]);
     if (!config || !config.marketEnabled) return interaction.reply({ content: '❌ Market+ is disabled.', ephemeral: true });
