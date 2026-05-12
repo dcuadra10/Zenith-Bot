@@ -3,6 +3,7 @@ const { getDb } = require('../config/database');
 const { handleApplicationMessage } = require('../utils/applicationHandler');
 const { getISOWeekString } = require('../utils/dateHelpers');
 const { buildMessage } = require('../utils/messageBuilder');
+const { sendBranded } = require('../utils/brandedSender');
 
 module.exports = {
     name: 'messageCreate',
@@ -164,22 +165,12 @@ module.exports = {
                         
                         const upChannel = conf.levelUpChannel ? message.guild.channels.cache.get(conf.levelUpChannel) : message.channel;
                         if (upChannel) {
-                            let title = conf.levelUpTitle || '🎉 Level Up!';
-                            let desc = conf.levelUpMessage || `Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`;
-                            
-                            const pTitle = title.replace('{user}', `<@${message.author.id}>`)
-                                               .replace('{level}', currentLevel + 1)
-                                               .replace('{server}', message.guild.name);
-                            const pDesc = desc.replace('{user}', `<@${message.author.id}>`)
-                                             .replace('{level}', currentLevel + 1)
-                                             .replace('{server}', message.guild.name);
-
-                            const payload = buildMessage(conf.levelUpUseEmbed !== 0, {
-                                title: pTitle,
-                                description: pDesc,
-                                color: conf.levelUpColor || '#FFD700'
+                            const payload = buildMessage(false, {
+                                title: '🎉 Level Up!',
+                                description: `Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`,
+                                color: '#FFD700'
                             });
-                            upChannel.send(payload).catch(() => {});
+                            sendBranded(upChannel, payload).catch(() => {});
                         }
 
                         // Check Role Rewards (if configured)
@@ -230,19 +221,12 @@ module.exports = {
                         const sjChannel = message.guild.channels.cache.get(conf.swearJarChannel);
                         if (sjChannel) {
                             const ping = conf.swearJarPing ? `<@${message.author.id}>` : `**${message.author.username}**`;
-                            
-                            let title = conf.swearJarTitle || '🏺 Swear Jar Contribution!';
-                            let desc = conf.swearJarMessage || `${ping} just added a coin to the jar for using prohibited dialect: \`${foundWord}\``;
-
-                            const pTitle = title.replace('{user}', ping).replace('{word}', foundWord);
-                            const pDesc = desc.replace('{user}', ping).replace('{word}', foundWord);
-
-                            const payload = buildMessage(true, {
-                                title: pTitle,
-                                description: pDesc,
-                                color: conf.swearJarColor || '#FFD700'
+                            const payload = buildMessage(false, {
+                                title: '🏺 Swear Jar Contribution!',
+                                description: `${ping} just added a coin to the jar for using prohibited dialect: \`${foundWord}\``,
+                                color: '#FFD700'
                             });
-                            sjChannel.send(payload).catch(() => {});
+                            sendBranded(sjChannel, payload).catch(() => {});
                         }
                     }
                 }

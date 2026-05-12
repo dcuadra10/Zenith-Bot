@@ -212,7 +212,57 @@ app.post('/api/config/:guildId', authenticateToken, async (req, res) => {
 // MARKET+ ROUTES (DEFINED BELOW)
 // ============================================
 
-// Branding Management Removed
+// GET Branding for a specific Guild (includes bot defaults for preview)
+app.get('/api/branding/:guildId', async (req, res) => {
+    const token = req.cookies.discord_token;
+    if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+    try {
+        const db = await getDb();
+        const config = await db.get(`SELECT brandingName, brandingAvatar FROM guild_configs WHERE guildId = ?`, [req.params.guildId]);
+        res.json({
+            brandingName: config?.brandingName || '',
+            brandingAvatar: config?.brandingAvatar || '',
+            defaultName: client.user.username,
+            defaultAvatar: client.user.displayAvatarURL({ size: 128 })
+        });
+    } catch (e) {
+        res.status(500).json({ error: 'Error fetching branding' });
+    }
+});
+
+// POST Save Branding for a specific Guild
+app.post('/api/branding/:guildId', async (req, res) => {
+    const token = req.cookies.discord_token;
+    if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+    const { brandingName, brandingAvatar } = req.body;
+    console.log(`[API] Saving branding for ${req.params.guildId}: Name=${brandingName}, Avatar=${brandingAvatar}`);
+    try {
+        const db = await getDb();
+        // Ensure the guild_configs row exists
+        await db.run(
+            `INSERT INTO guild_configs (guildId, brandingName, brandingAvatar) 
+             VALUES (?, ?, ?) 
+             ON CONFLICT(guildId) DO UPDATE SET 
+             brandingName=excluded.brandingName,
+             brandingAvatar=excluded.brandingAvatar`,
+             [req.params.guildId, brandingName || null, brandingAvatar || null]
+        );
+
+        // Update Bot Profile in the guild
+        const { updateBotGuildIdentity } = require('./utils/brandedSender');
+        const guild = client.guilds.cache.get(req.params.guildId);
+        if (guild) {
+            await updateBotGuildIdentity(guild, { brandingName, brandingAvatar });
+        }
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Error saving branding' });
+    }
+});
 
 // GET Custom Bot Info
 app.get('/api/custom-bot/:guildId', async (req, res) => {
@@ -263,7 +313,69 @@ app.post('/api/custom-bot/:guildId', async (req, res) => {
     }
 });
 
-// Branding & Custom Bot APIs Removed
+// DELETE Custom Bot Disconnect
+app.delete('/api/custom-bot/:guildId', async (req, res) => {
+    const token = req.cookies.discord_token;
+    if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+    try {
+        const customBotManager = require('./managers/CustomBotManager');
+        await customBotManager.stopBot(req.params.guildId);
+        
+        const db = await getDb();
+        await db.run(`DELETE FROM custom_bots WHERE guildId = ?`, [req.params.guildId]);
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Error disconnecting custom bot:', e);
+        res.status(500).json({ error: 'Error al desconectar el bot personalizado' });
+    }
+});
+
+// POST Test Branding (send a test message)
+app.post('/api/branding/:guildId/test', async (req, res) => {
+    const token = req.cookies.discord_token;
+    if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+    const { channelId, brandingName, brandingAvatar } = req.body;
+    try {
+        const guild = client.guilds.cache.get(req.params.guildId);
+        if (!guild) return res.status(400).json({ error: 'Bot is not in this guild' });
+        
+        const channel = guild.channels.cache.get(channelId);
+        if (!channel) return res.status(400).json({ error: 'Channel not found' });
+
+        const { getOrCreateWebhook, updateBotGuildIdentity } = require('./utils/brandedSender');
+        
+        // Update profile too so they see the change on the bot user
+        await updateBotGuildIdentity(guild, { brandingName, brandingAvatar });
+
+        const webhook = await getOrCreateWebhook(channel);
+        
+        if (!webhook) {
+            return res.status(500).json({ error: 'Could not create webhook. Check bot permissions.' });
+        }
+
+        const { EmbedBuilder } = require('discord.js');
+        const embed = new EmbedBuilder()
+            .setTitle('🎨 Branding Test')
+            .setDescription('This is a preview of how I will appear in this server with the configured branding.')
+            .setColor(brandingName || brandingAvatar ? '#10b981' : '#a855f7')
+            .setFooter({ text: 'Zenith Branding System' })
+            .setTimestamp();
+
+        await webhook.send({
+            username: brandingName || client.user.username,
+            avatarURL: brandingAvatar || client.user.displayAvatarURL(),
+            embeds: [embed]
+        });
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Branding test error:', e);
+        res.status(500).json({ error: 'Error sending test message' });
+    }
+});
 
 // GET Panels for a specific Guild
 app.get('/api/panels/:guildId', async (req, res) => {

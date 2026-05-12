@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
 const path = require('path');
 const { getDb } = require('../../config/database');
-// const { sendBranded } = require('../../utils/brandedSender'); // Removed branding tool
+const { sendBranded } = require('../../utils/brandedSender');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -48,7 +48,7 @@ module.exports = {
       );
 
     const payload = { embeds: [leaderboardEmbed, embed], components: [row], files: [attachment] };
-    await interaction.channel.send(payload);
+    await sendBranded(interaction.channel, payload);
     await interaction.reply({ content: 'Panel deployed successfully.', ephemeral: true });
   }
 };

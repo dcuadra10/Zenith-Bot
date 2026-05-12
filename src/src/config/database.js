@@ -242,25 +242,7 @@ async function getDb() {
                 r4TrackingEnabled INTEGER DEFAULT 0,
                 r4TrackingRole TEXT,
                 r4TrackingAdQuota INTEGER DEFAULT 40,
-                r4TrackingMsgQuota INTEGER DEFAULT 245,
-                -- Swear Jar
-                swearJarEnabled INTEGER DEFAULT 0,
-                swearJarChannel TEXT,
-                swearJarWords TEXT,
-                swearJarPing INTEGER DEFAULT 1,
-                swearJarTitle TEXT,
-                swearJarMessage TEXT,
-                swearJarColor TEXT,
-                -- Logging Extras
-                logVoice INTEGER DEFAULT 1,
-                logServer INTEGER DEFAULT 1,
-                logInvites INTEGER DEFAULT 1,
-                -- Leveling Extras
-                levelUpTitle TEXT,
-                levelUpMessage TEXT,
-                levelUpColor TEXT,
-                levelUpUseEmbed INTEGER DEFAULT 1,
-                levelingBackground TEXT
+                r4TrackingMsgQuota INTEGER DEFAULT 245
             );
 
             CREATE TABLE IF NOT EXISTS custom_bots (
@@ -312,17 +294,7 @@ async function getDb() {
             );
         `);
         
-        const ticketCols = [
-            'ticketsMaxActive INTEGER DEFAULT 2', 'ticketsTranscriptChannel TEXT', 'countingMath INTEGER DEFAULT 0', 
-            'countingLastUser TEXT', 'ticketCategoryId TEXT', 'ticketsApprovalChannel TEXT', 
-            'r4TrackingEnabled INTEGER DEFAULT 0', 'r4TrackingRole TEXT', 'r4TrackingAdQuota INTEGER DEFAULT 40', 
-            'r4TrackingMsgQuota INTEGER DEFAULT 245', 'welcomeImage TEXT', 'welcomeUseEmbed INTEGER DEFAULT 1', 
-            'swearJarEnabled INTEGER DEFAULT 0', 'swearJarChannel TEXT', 'swearJarWords TEXT', 'swearJarPing INTEGER DEFAULT 1',
-            'swearJarTitle TEXT', 'swearJarMessage TEXT', 'swearJarColor TEXT',
-            'logVoice INTEGER DEFAULT 1', 'logServer INTEGER DEFAULT 1', 'logInvites INTEGER DEFAULT 1',
-            'levelUpTitle TEXT', 'levelUpMessage TEXT', 'levelUpColor TEXT', 'levelUpUseEmbed INTEGER DEFAULT 1',
-            'levelingBackground TEXT'
-        ];
+        const ticketCols = ['ticketsMaxActive INTEGER DEFAULT 2', 'ticketsTranscriptChannel TEXT', 'countingMath INTEGER DEFAULT 0', 'countingLastUser TEXT', 'ticketCategoryId TEXT', 'ticketsApprovalChannel TEXT', 'r4TrackingEnabled INTEGER DEFAULT 0', 'r4TrackingRole TEXT', 'r4TrackingAdQuota INTEGER DEFAULT 40', 'r4TrackingMsgQuota INTEGER DEFAULT 245', 'welcomeImage TEXT', 'welcomeUseEmbed INTEGER DEFAULT 1', 'swearJarEnabled INTEGER DEFAULT 0', 'swearJarChannel TEXT', 'swearJarWords TEXT', 'swearJarPing INTEGER DEFAULT 1'];
         for (const col of ticketCols) {
             try { await dbInstance.exec(`ALTER TABLE module_configs ADD COLUMN ${col}`); } catch (e) {}
         }

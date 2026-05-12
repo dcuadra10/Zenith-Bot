@@ -172,18 +172,146 @@ function goBackToGuilds() {
     document.getElementById('page-overview').classList.add('active');
 }
 
+let currentGuildChannels = [];
+let currentGuildRoles = [];
+let tomSelects = {};
+
+function initTomSelect(id, isMulti, placeholder) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // Destroy existing if any
+    if (tomSelects[id]) {
+        tomSelects[id].destroy();
+        delete tomSelects[id];
+    }
+
+    try {
+        tomSelects[id] = new TomSelect(el, {
+            create: false,
+            placeholder: placeholder || 'Select...',
+            maxOptions: 500,
+            plugins: isMulti ? ['remove_button'] : [],
+            render: {
+                option: function(data, escape) {
+                    let icon = '';
+                    if (id.toLowerCase().includes('channel')) icon = '<i class="fas fa-hashtag" style="opacity:0.6; margin-right:8px;"></i>';
+                    if (id.toLowerCase().includes('role')) icon = '<i class="fas fa-at" style="opacity:0.6; margin-right:8px;"></i>';
+                    if (id.toLowerCase().includes('category')) icon = '<i class="fas fa-folder" style="opacity:0.6; margin-right:8px;"></i>';
+                    return `<div>${icon}${escape(data.text)}</div>`;
+                },
+                item: function(data, escape) {
+                    let icon = '';
+                    if (id.toLowerCase().includes('channel')) icon = '<i class="fas fa-hashtag" style="opacity:0.6; margin-right:8px;"></i>';
+                    if (id.toLowerCase().includes('role')) icon = '<i class="fas fa-at" style="opacity:0.6; margin-right:8px;"></i>';
+                    if (id.toLowerCase().includes('category')) icon = '<i class="fas fa-folder" style="opacity:0.6; margin-right:8px;"></i>';
+                    return `<div>${icon}${escape(data.text)}</div>`;
+                }
+            }
+        });
+    } catch (e) {
+        console.warn(`Could not init TomSelect for ${id}:`, e);
+    }
+}
+
+function populateAllDropdowns() {
+    // We will populate all <select> elements dynamically based on their purpose
+    // Category dropdowns
+    const categories = currentGuildChannels.filter(c => c.type === 4);
+    const textChannels = currentGuildChannels.filter(c => c.type === 0);
+    
+    // Selects that need a channel
+    const channelSelects = [
+        'cfgWelcomeChannel', 'cfgLogChannel', 'cfgLeadershipChannel', 
+        'panelChannelId', 'adminReviewChannel', 
+        'marketApprovalChannel', 'marketFeeChannel', 'automodLogChannel', 
+        'loggingChannel', 'countingChannel', 'swearJarChannel',
+        'levelUpChannel', 'ticketsTranscriptChannel', 'ticketsApprovalChannel', 'marketOwnerChannel'
+    ];
+    
+    // Selects that need a category
+    const categorySelects = ['cfgTicketCategory', 'statsCategoryId', 'modalCategoryId'];
+    
+    // Selects that need a role
+    const roleSelects = ['marketMiddlemanRole', 'r4TrackingRole', 'autoRoleInput'];
+    
+    channelSelects.forEach(id => populateDropdown(id, textChannels, 'Select a Channel'));
+    categorySelects.forEach(id => populateDropdown(id, categories, 'Select a Category'));
+    roleSelects.forEach(id => populateDropdown(id, currentGuildRoles, 'Select a Role'));
+    
+    // Multi-select for roles
+    const multiRoleSelects = ['modalStaffRoles', 'modalPingRoles', 'autoroleIds'];
+    multiRoleSelects.forEach(id => populateDropdown(id, currentGuildRoles, 'Select Roles', true));
+}
+
+function populateDropdown(elementId, items, placeholder, isMulti = false) {
+    const el = document.getElementById(elementId);
+    if (!el || el.tagName !== 'SELECT') return;
+    
+    // Preserve existing value if any
+    const currentValue = isMulti ? 
+        Array.from(el.selectedOptions).map(o => o.value) : 
+        el.value;
+        
+    el.innerHTML = '';
+    
+    if (!isMulti) {
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = `-- ${placeholder} --`;
+        el.appendChild(defaultOpt);
+    }
+
+    items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = item.name;
+        el.appendChild(opt);
+    });
+    
+    // Restore value
+    if (isMulti) {
+        Array.from(el.options).forEach(opt => {
+            if (currentValue.includes(opt.value)) opt.selected = true;
+        });
+    } else {
+        el.value = currentValue;
+    }
+
+    // Re-init TomSelect
+    initTomSelect(elementId, isMulti, placeholder);
+}
+
+
 // ===== LOAD ALL DASHBOARD DATA =====
 async function loadDashboardData() {
     if (!activeGuild) return;
     const gid = activeGuild.id;
 
+    // Fetch channels and roles
+    try {
+        const [chanRes, roleRes] = await Promise.all([
+            fetch(`${API_URL}/guild/${gid}/channels`),
+            fetch(`${API_URL}/guild/${gid}/roles`)
+        ]);
+        if (chanRes.ok) currentGuildChannels = await chanRes.json();
+        if (roleRes.ok) currentGuildRoles = await roleRes.json();
+        
+        // Populate all dropdowns (will add this function soon)
+        populateAllDropdowns();
+    } catch (e) { console.error('Error fetching guild data:', e); }
+
     // Stats
     try {
-        const res = await fetch(`${API_URL}/stats`);
-        const data = await res.json();
-        animateValue('statAds', 0, data.totalAds || 0, 800);
-        animateValue('statUsers', 0, data.totalUsers || 0, 800);
-    } catch (e) { console.error(e); }
+        const res = await fetch(`${API_URL}/guild/${gid}/stats`);
+        if (res.ok) {
+            const data = await res.json();
+            animateValue('statHumans', 0, data.citizens || 0, 800);
+            animateValue('statBots', 0, data.bots || 0, 800);
+            animateValue('statChannels', 0, data.communications || 0, 800);
+            animateValue('statBoosts', 0, data.boosts || 0, 800);
+        }
+    } catch (e) { console.error('Error fetching stats:', e); }
 
     // Config
     try {
@@ -201,6 +329,22 @@ async function loadDashboardData() {
         const res = await fetch(`${API_URL}/modules/${gid}`);
         const mods = await res.json();
         loadModuleToggles(mods);
+        
+        // Populate new customization fields
+        setVal('levelUpTitle', mods.levelUpTitle || '?? Level Up!');
+        setVal('levelUpMessage', mods.levelUpMessage || '{user} just reached level **{level}**!');
+        setVal('levelUpColor', mods.levelUpColor || '#FFD700');
+        setCheck('levelUpUseEmbed', mods.levelUpUseEmbed !== undefined ? mods.levelUpUseEmbed : true);
+        setVal('levelingBackground', mods.levelingBackground || '');
+        
+        setVal('swearJarTitle', mods.swearJarTitle || '?? Swear Jar Contribution!');
+        setVal('swearJarMessage', mods.swearJarMessage || '{user} just added a coin to the jar for using prohibited dialect: `{word}`');
+        setVal('swearJarColor', mods.swearJarColor || '#FFD700');
+        
+        // Update all previews initially
+        updateWelcomePreview();
+        updateLevelingPreview();
+        updateSwearJarPreview();
     } catch (e) { console.error(e); }
 
     // Panels
@@ -208,13 +352,36 @@ async function loadDashboardData() {
     fetchTranscripts();
     fetchGiveaways();
     fetchR4Tracking();
-    fetchBranding();
     fetchCustomBot();
     fetchMarketConfig();
 }
 
 // ===== MARKET QUESTIONS LOGIC =====
 let marketQuestionsArr = [];
+
+function loadDefaultMarketQuestions() {
+    marketQuestionsArr = [
+        { key: 'price', prompt: '💰 **1. What is the Price of the account?**\n*(e.g. 1000$)*', isImage: false },
+        { key: 'power', prompt: '<:power:1497402340892868618> **2. What is the Power?**\n*(e.g. 100m)*', isImage: false },
+        { key: 'kp', prompt: '<:kp:1497402419665961001> **3. What are the Kill Points?**\n*(e.g. 30b)*', isImage: false },
+        { key: 'deaths', prompt: '<:deaths:1497402636083662981> **4. What are the Deaths?**\n*(e.g. 30m)*', isImage: false },
+        { key: 'vip', prompt: '<:VIP:1497401764717002924> **5. What is the VIP Level?**\n*(e.g. SVIP, VIP 17)*', isImage: false },
+        { key: 'gems', prompt: '<:gem1:1497401988651159573> **6. How many Gems?**\n*(e.g. 50k)*', isImage: false },
+        { key: 'skins', prompt: '<:skin:1497410065492086965> **7. How many Legendary City Skins?**\n*(e.g. 5)*', isImage: false },
+        { key: 'equipment', prompt: '<:equip:1497405923189194863> **8. How many Legendary Equipment pieces?**\n*(e.g. 10)*', isImage: false },
+        { key: 'passports', prompt: '<:passport:1495891858717671454> **9. How many Passports?**\n*(e.g. 100)*', isImage: false },
+        { key: 'goldHeads', prompt: '<:gh:1497401912142729257> **10. How many Gold Heads?**\n*(e.g. 100)*', isImage: false },
+        { key: 'commanders', prompt: '<:commander:1497711538906337451> **11. How many Expertise Legendary Commanders?**\n*(e.g. 10)*', isImage: false },
+        { key: 'rss', prompt: '🌾🪵🪨🪙 **12. How many Resources (Food, Wood, Stone, Gold)?**\n*(e.g. 10b Food, 5b Wood...)*', isImage: false },
+        { key: 'speedups', prompt: '⏱️ **13. How many Speedups (Universal, Healing, Training)?**\n*(e.g. 1000d Uni, 300d Heal...)*', isImage: false },
+        { key: 'age', prompt: '<:days:1497712897181089802> **14. Account Age in days?**\n*(e.g. 1000 days)*', isImage: false },
+        { key: 'migrate', prompt: '✈️ **15. Is the account ready to migrate?**\n*(Yes / No)*', isImage: false },
+        { key: 'kvk', prompt: '⚔️ **16. Which KvK is it in?**\n*(1, 2, 3, or SOC)*', isImage: false },
+        { key: 'notes', prompt: '<:notes:1500635402820780232> **17. Any additional notes?**\n*(e.g. N/A or details about farms)*', isImage: false },
+        { key: 'images', prompt: '📸 **18. Please upload screenshots proving this information.**\n*(Upload all images in a single message, then wait).*', isImage: true }
+    ];
+    renderMarketQuestions();
+}
 
 function addMarketQuestion() {
     marketQuestionsArr.push({ key: 'custom_'+Date.now(), prompt: 'New Question?', isImage: false });
@@ -343,7 +510,22 @@ function renderMmPaymentMethods() {
 
 function setVal(id, val) {
     const el = document.getElementById(id);
-    if (el) el.value = val || '';
+    if (!el) return;
+
+    if (tomSelects[id]) {
+        const values = (val || '').split(',').map(v => v.trim()).filter(v => v);
+        tomSelects[id].setValue(values);
+        return;
+    }
+
+    if (el.tagName === 'SELECT' && el.multiple) {
+        const values = (val || '').split(',').map(v => v.trim());
+        Array.from(el.options).forEach(opt => {
+            opt.selected = values.includes(opt.value);
+        });
+    } else {
+        el.value = val || '';
+    }
 }
 
 function loadModuleToggles(mods) {
@@ -379,7 +561,7 @@ function loadModuleToggles(mods) {
     setCheck('automodMentions', mods.automodMentions);
     setCheck('automodCaps', mods.automodCaps);
     setCheck('automodWords', mods.automodWords);
-    setVal('automodWordList', mods.automodWordList);
+    setVal('automodWordList', mods.automodWordList || 'fuck,shit,bitch,asshole,dick,cunt,pussy,motherfucker,puta,mierda,pendejo,cabron');
     setVal('automodMaxMentions', mods.automodMaxMentions ?? 5);
     setVal('automodLogChannel', mods.automodLogChannel);
     // Logging
@@ -390,14 +572,16 @@ function loadModuleToggles(mods) {
     setCheck('logMembers', mods.logMembers);
     setCheck('logRoles', mods.logRoles);
     setCheck('logChannels', mods.logChannels);
-    setCheck('logBans', mods.logBans);
+    setCheck('logVoice', mods.logVoice);
+    setCheck('logServer', mods.logServer);
+    setCheck('logInvites', mods.logInvites);
     // Auto-Role
     setCheck('toggleAutorole', mods.autoroleEnabled);
     setVal('autoroleIds', mods.autoroleIds);
     // Swear Jar
     setCheck('toggleSwearJar', mods.swearJarEnabled);
     setVal('swearJarChannel', mods.swearJarChannel);
-    setVal('swearJarWords', mods.swearJarWords);
+    setVal('swearJarWords', mods.swearJarWords || 'fuck,shit,bitch,asshole,dick,cunt,pussy,motherfucker,puta,mierda,pendejo,cabron');
     setCheck('swearJarPing', mods.swearJarPing === undefined || mods.swearJarPing === null ? true : !!mods.swearJarPing);
     // Counting
     setCheck('toggleCounting', mods.countingEnabled);
@@ -440,7 +624,17 @@ function getCheck(id) {
 
 function getVal(id) {
     const el = document.getElementById(id);
-    return el ? el.value.trim() : '';
+    if (!el) return '';
+
+    if (tomSelects[id]) {
+        const val = tomSelects[id].getValue();
+        return Array.isArray(val) ? val.join(', ') : val;
+    }
+
+    if (el.tagName === 'SELECT' && el.multiple) {
+        return Array.from(el.selectedOptions).map(o => o.value).join(', ');
+    }
+    return el.value.trim();
 }
 
 // ===== SAVE GENERAL CONFIG =====
@@ -482,7 +676,7 @@ async function saveModuleConfig(moduleName) {
     const payload = {
         // Welcome
         welcomeEnabled: getCheck('toggleWelcome'),
-        welcomeChannel: getVal('welcomeChannelCfg'),
+        welcomeChannel: getVal('cfgWelcomeChannel'),
         welcomeEmbedTitle: getVal('welcomeTitle'),
         welcomeEmbedDesc: getVal('welcomeMessage'),
         welcomeColor: getVal('welcomeColor'),
@@ -494,12 +688,25 @@ async function saveModuleConfig(moduleName) {
         xpMax: parseInt(getVal('xpMax')) || 15,
         xpCooldown: parseInt(getVal('xpCooldown')) || 60,
         levelUpChannel: getVal('levelUpChannel'),
+        levelUpTitle: getVal('levelUpTitle'),
+        levelUpMessage: getVal('levelUpMessage'),
+        levelUpColor: getVal('levelUpColor'),
+        levelUpUseEmbed: getCheck('levelUpUseEmbed'),
+        levelingBackground: getVal('levelingBackground'),
         // Tickets
         ticketsEnabled: getCheck('toggleTickets'),
         ticketsMaxActive: parseInt(getVal('ticketsMaxActive'), 10) || 2,
         ticketsTranscriptChannel: getVal('ticketsTranscriptChannel'),
-        ticketCategoryId: getVal('ticketCategoryId'),
+        ticketCategoryId: getVal('cfgTicketCategory'),
         ticketsApprovalChannel: getVal('ticketsApprovalChannel'),
+        // Swear Jar
+        swearJarEnabled: getCheck('toggleSwearJar'),
+        swearJarChannel: getVal('swearJarChannel'),
+        swearJarWords: getVal('swearJarWords'),
+        swearJarPing: getCheck('swearJarPing'),
+        swearJarTitle: getVal('swearJarTitle'),
+        swearJarMessage: getVal('swearJarMessage'),
+        swearJarColor: getVal('swearJarColor'),
         // Automod
         automodEnabled: getCheck('toggleAutomod'),
         automodSpam: getCheck('automodSpam'),
@@ -518,7 +725,10 @@ async function saveModuleConfig(moduleName) {
         logMembers: getCheck('logMembers'),
         logRoles: getCheck('logRoles'),
         logChannels: getCheck('logChannels'),
-        logBans: getCheck('logBans'),
+        logBans: getCheck('logMembers'), // Syncing with members for simplicity
+        logVoice: getCheck('logVoice'),
+        logServer: getCheck('logServer'),
+        logInvites: getCheck('logInvites'),
         // Auto-Role
         autoroleEnabled: getCheck('toggleAutorole'),
         autoroleIds: getVal('autoroleIds'),
@@ -557,16 +767,37 @@ async function saveModuleConfig(moduleName) {
     };
 
     try {
-        const res = await fetch(`${API_URL}/modules/${activeGuild.id}`, {
+        // Save Module Config
+        await fetch(`${API_URL}/modules/${activeGuild.id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (res.ok) {
-            showToast(`✅ ${moduleName} config saved!`);
+
+        // Also Save Core Config (Redistributed fields)
+        await fetch(`${API_URL}/config/${activeGuild.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                welcomeChannelId: getVal('cfgWelcomeChannel'),
+                logChannelId: getVal('cfgLogChannel'),
+                leadershipChannelId: getVal('cfgLeadershipChannel'),
+                ticketCategoryId: getVal('cfgTicketCategory'),
+                spreadsheetId: getVal('cfgSpreadsheetId')
+            })
+        });
+
+        const btn = event.target.closest('button');
+        if (btn) {
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> DEPLOYED';
+            btn.classList.add('z-btn-success');
+            setTimeout(() => {
+                btn.innerHTML = oldText;
+                btn.classList.remove('z-btn-success');
+            }, 2000);
         }
     } catch (e) {
-        showToast(`❌ Error saving ${moduleName}`, true);
     }
 }
 
@@ -708,23 +939,129 @@ function updatePanelPreview() {
     const descEmojiVal = getVal('panelDescEmoji') || '';
     const color = getVal('panelColor') || '#a855f7';
 
+    const useEmbed = getCheck('panelUseEmbed');
+
     const fullTitle = (emojiVal ? emojiVal + ' ' : '') + titleVal;
     const fullDesc = (descEmojiVal ? descEmojiVal + ' ' : '') + descVal;
 
-    document.getElementById('previewTitle').innerHTML = formatDiscordText(fullTitle);
+    const cb = document.getElementById('previewColorBar');
+    const content = document.getElementById('previewContentBlock');
+    const titleEl = document.getElementById('previewTitle');
+
+    if (useEmbed) {
+        cb.style.display = 'block';
+        cb.style.background = color;
+        content.style.background = '#2b2d31';
+        content.style.border = '1px solid #1e1f22';
+        content.style.borderLeft = 'none';
+        content.style.padding = '16px';
+        titleEl.style.fontSize = '1rem';
+        titleEl.style.fontWeight = '700';
+    } else {
+        cb.style.display = 'none';
+        content.style.background = 'transparent';
+        content.style.border = 'none';
+        content.style.padding = '0 0 16px 0';
+        titleEl.style.fontSize = '1.3rem';
+        titleEl.style.fontWeight = '800';
+    }
+
+    titleEl.innerHTML = formatDiscordText(fullTitle);
     document.getElementById('previewDesc').innerHTML = formatDiscordText(fullDesc);
-    document.getElementById('previewColorBar').style.background = color;
 
     // Update select menu previews
     const menusContainer = document.getElementById('previewMenus');
-    if (panelDraft.dropdowns.length === 0) {
+    if (panelDraft.dropdowns.length === 0 && panelDraft.buttonRows.length === 0) {
         menusContainer.innerHTML = '<div style="background:#1e1f22;border:1px solid #3f4147;border-radius:4px;padding:8px 12px;font-size:0.82rem;color:#949ba4;">Select an option...</div>';
     } else {
-        menusContainer.innerHTML = panelDraft.dropdowns.map(dd =>
-            `<div style="background:#1e1f22;border:1px solid #3f4147;border-radius:4px;padding:8px 12px;font-size:0.82rem;color:#949ba4;margin-bottom:4px;">${dd.placeholder || 'Select an option...'}</div>`
-        ).join('');
+        let html = '';
+        panelDraft.dropdowns.forEach(dd => {
+            html += `<div style="background:#1e1f22;border:1px solid #3f4147;border-radius:4px;padding:8px 12px;font-size:0.82rem;color:#949ba4;margin-bottom:4px;">${dd.placeholder || 'Select an option...'}</div>`;
+        });
+        panelDraft.buttonRows.forEach(row => {
+            html += `<div style="display:flex; gap:4px; margin-top:4px;">${row.options.map(opt => `<div style="background:#4e5058; color:white; padding:4px 12px; border-radius:3px; font-size:0.8rem; cursor:default;">${opt.label}</div>`).join('')}</div>`;
+        });
+        menusContainer.innerHTML = html;
     }
 }
+
+function updateWelcomePreview() {
+    const title = getVal('welcomeTitle') || 'Welcome!';
+    const desc = getVal('welcomeMessage') || 'Welcome to the server, {user}!';
+    const color = getVal('welcomeColor') || '#FFD700';
+    const image = getVal('welcomeImage');
+    const useEmbed = getCheck('welcomeUseEmbed');
+
+    const embedWrap = document.getElementById('welcomePreviewEmbed');
+    const textWrap = document.getElementById('welcomePreviewText');
+    const imgEl = document.getElementById('welcomePreviewImage');
+    const imgPlainEl = document.getElementById('welcomePreviewImagePlain');
+
+    if (useEmbed) {
+        embedWrap.style.display = 'flex';
+        textWrap.style.display = 'none';
+        document.getElementById('welcomePreviewColorBar').style.background = color;
+        document.getElementById('welcomePreviewTitle').innerHTML = formatDiscordText(title);
+        document.getElementById('welcomePreviewDesc').innerHTML = formatDiscordText(desc);
+        if (image) { imgEl.src = image; imgEl.style.display = 'block'; } else { imgEl.style.display = 'none'; }
+    } else {
+        embedWrap.style.display = 'none';
+        textWrap.style.display = 'block';
+        textWrap.innerHTML = formatDiscordText(desc);
+        if (image) { imgPlainEl.src = image; imgPlainEl.style.display = 'block'; } else { imgPlainEl.style.display = 'none'; }
+    }
+}
+
+function updateLevelingPreview() {
+    const title = getVal('levelUpTitle') || 'GG!';
+    const desc = getVal('levelUpMessage') || '{user} just reached level **{level}**!';
+    const color = getVal('levelUpColor') || '#FFD700';
+    const useEmbed = getCheck('levelUpUseEmbed');
+
+    const embedWrap = document.getElementById('levelPreviewEmbed');
+    const textWrap = document.getElementById('levelPreviewText');
+
+    if (useEmbed) {
+        embedWrap.style.display = 'flex';
+        textWrap.style.display = 'none';
+        document.getElementById('levelPreviewColorBar').style.background = color;
+        document.getElementById('levelPreviewTitle').innerHTML = formatDiscordText(title);
+        document.getElementById('levelPreviewDesc').innerHTML = formatDiscordText(desc);
+    } else {
+        embedWrap.style.display = 'none';
+        textWrap.style.display = 'block';
+        textWrap.innerHTML = formatDiscordText(desc);
+    }
+}
+
+function updateSwearJarPreview() {
+    const title = getVal('swearJarTitle') || 'Swear Jar Contribution!';
+    const desc = getVal('swearJarMessage') || '{user} just added a coin to the jar for using prohibited dialect: `{word}`';
+    const color = getVal('swearJarColor') || '#FFD700';
+
+    document.getElementById('swearPreviewColorBar').style.background = color;
+    document.getElementById('swearPreviewTitle').innerHTML = formatDiscordText(title);
+    document.getElementById('swearPreviewDesc').innerHTML = formatDiscordText(desc);
+}
+
+// Add listeners to all preview-able inputs
+document.addEventListener('DOMContentLoaded', () => {
+    const ids = [
+        'welcomeTitle', 'welcomeMessage', 'welcomeColor', 'welcomeImage', 'welcomeUseEmbed',
+        'levelUpTitle', 'levelUpMessage', 'levelUpColor', 'levelUpUseEmbed',
+        'swearJarTitle', 'swearJarMessage', 'swearJarColor'
+    ];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const ev = el.type === 'checkbox' || el.type === 'color' ? 'change' : 'input';
+        el.addEventListener(ev, () => {
+            if (id.startsWith('welcome')) updateWelcomePreview();
+            if (id.startsWith('level')) updateLevelingPreview();
+            if (id.startsWith('swear')) updateSwearJarPreview();
+        });
+    });
+});
 
 // =============================================
 // TICKET PANELS & TRANSCRIPTS
@@ -1534,102 +1871,7 @@ async function executeLevelImport(input) {
 }
 
 // =============================================
-// BRANDING SYSTEM
-// =============================================
-let brandingDefaults = { name: 'Zenith', avatar: '' };
 
-async function fetchBranding() {
-    if (!activeGuild) return;
-    try {
-        const res = await fetch(`${API_URL}/branding/${activeGuild.id}`);
-        const data = await res.json();
-        brandingDefaults.name = data.defaultName || 'Zenith';
-        brandingDefaults.avatar = data.defaultAvatar || '';
-        setVal('brandingName', data.brandingName);
-        setVal('brandingAvatar', data.brandingAvatar);
-        updateBrandingPreview();
-    } catch (e) { console.error('Error loading branding:', e); }
-}
-
-function updateBrandingPreview() {
-    const name = getVal('brandingName') || brandingDefaults.name;
-    const avatarUrl = getVal('brandingAvatar') || brandingDefaults.avatar;
-
-    const nameEl = document.getElementById('brandingPreviewName');
-    const avatarEl = document.getElementById('brandingPreviewAvatar');
-
-    if (nameEl) nameEl.textContent = name;
-    if (avatarEl) {
-        if (avatarUrl) {
-            avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='${name[0]?.toUpperCase() || 'Z'}'">`;
-        } else {
-            avatarEl.innerHTML = name[0]?.toUpperCase() || 'Z';
-        }
-    }
-}
-
-async function saveBranding() {
-    if (!activeGuild) return;
-    const brandingName = getVal('brandingName');
-    const brandingAvatar = getVal('brandingAvatar');
-
-    // Validate name length
-    if (brandingName && (brandingName.length < 1 || brandingName.length > 80)) {
-        return showToast('❌ Display name must be 1-80 characters.', true);
-    }
-
-    // Validate avatar URL
-    if (brandingAvatar && !brandingAvatar.match(/^https?:\/\/.+/)) {
-        return showToast('❌ Avatar must be a valid URL starting with http:// or https://', true);
-    }
-
-    try {
-        const res = await fetch(`${API_URL}/branding/${activeGuild.id}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ brandingName, brandingAvatar })
-        });
-        if (res.ok) {
-            showToast('✅ Bot identity saved for this server!');
-        } else {
-            showToast('❌ Error saving branding.', true);
-        }
-    } catch (e) {
-        showToast('❌ Network error saving branding.', true);
-    }
-}
-
-function resetBranding() {
-    document.getElementById('brandingName').value = '';
-    document.getElementById('brandingAvatar').value = '';
-    updateBrandingPreview();
-    showToast('Identity reset to defaults. Click Save to apply.');
-}
-
-async function testBranding() {
-    if (!activeGuild) return;
-    const channelId = getVal('brandingTestChannel');
-    if (!channelId) return showToast('❌ Enter a channel ID first.', true);
-
-    const brandingName = getVal('brandingName');
-    const brandingAvatar = getVal('brandingAvatar');
-
-    try {
-        const res = await fetch(`${API_URL}/branding/${activeGuild.id}/test`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ channelId, brandingName, brandingAvatar })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            showToast('✅ Test message sent! Check the channel.');
-        } else {
-            showToast(`❌ ${data.error || 'Failed to send test.'}`, true);
-        }
-    } catch (e) {
-        showToast('❌ Network error sending test.', true);
-    }
-}
 
 // ===== CUSTOM BOT MANAGEMENT =====
 async function fetchCustomBot() {

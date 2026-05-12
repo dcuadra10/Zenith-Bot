@@ -1,0 +1,68 @@
+const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const path = require('path');
+const { getDb } = require('../../config/database');
+const { getISOWeekString } = require('../../utils/dateHelpers');
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('r4-stats')
+        .setDescription('Check your current weekly progress for R4 quotas (Ads and Messages).'),
+    async execute(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
+        const db = await getDb();
+        const conf = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [interaction.guild.id]);
+
+        if (!conf || !conf.r4TrackingEnabled) {
+            return interaction.editReply('❌ The R4 Tracking module is currently disabled for this server.');
+        }
+
+        const roleId = conf.r4TrackingRole ? conf.r4TrackingRole.replace(/[^0-9]/g, '') : null;
+        if (roleId && !interaction.member.roles.cache.has(roleId)) {
+            return interaction.editReply('❌ You do not have the required officer role to participate in R4 Tracking.');
+        }
+
+        const weekId = getISOWeekString();
+        const record = await db.get(`SELECT * FROM r4_tracking WHERE guildId = ? AND userId = ? AND weekId = ?`, [interaction.guild.id, interaction.user.id, weekId]);
+
+        const ads = record ? record.ads : 0;
+        const msgs = record ? record.messages : 0;
+        const excused = record ? record.excused : 0;
+
+        const adQuota = conf.r4TrackingAdQuota || 40;
+        const msgQuota = conf.r4TrackingMsgQuota || 245;
+
+        const adPct = (ads / adQuota) * 100;
+        const msgPct = (msgs / msgQuota) * 100;
+        const totalPct = Math.min(Math.round(adPct + msgPct), 200);
+
+        let statusText = '⚠️ **Failing**';
+        let color = 'Red';
+        if (excused) {
+            statusText = '🛡️ **Excused**';
+            color = 'Blue';
+        } else if (totalPct >= 100) {
+            statusText = '✅ **Passed**';
+            color = 'Green';
+        } else if (totalPct >= 75) {
+            statusText = '⚠️ **Warning (Near Passing)**';
+            color = 'Orange';
+        }
+
+        const embed = new EmbedBuilder()
+            .setTitle(`🎯 R4 Weekly Progress: ${weekId}`)
+            .setColor(color)
+            .setDescription(`Here is your current progress towards the weekly activity quotas.\n\n**Status:** ${statusText}\n**Total Completion:** \`${totalPct}%\` / 100%`)
+            .addFields(
+                { name: '📊 Ads Logged', value: `${ads} / ${adQuota} \`(${Math.round(adPct)}%)\``, inline: true },
+                { name: '💬 Messages Sent', value: `${msgs} / ${msgQuota} \`(${Math.round(msgPct)}%)\``, inline: true }
+            )
+            .setFooter({ text: 'Quotas are combined. You can compensate one with the other.' });
+
+        const imagePath = path.join(process.cwd(), 'zenith_bg - Copy.png');
+        const attachment = new AttachmentBuilder(imagePath, { name: 'zenith_bg.png' });
+        embed.setImage('attachment://zenith_bg.png');
+
+        await interaction.editReply({ embeds: [embed], files: [attachment] });
+    }
+};

@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- FontAwesome for standard icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.4.3/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.4.3/js/tom-select.complete.js"></script>
 </head>
 <body>
 
@@ -82,9 +84,7 @@
             </div>
 
             <div class="sidebar-section">UTILITIES</div>
-            <div class="sidebar-link" data-page="general">
-                <i class="fas fa-cog link-icon"></i> General Settings
-            </div>
+
             <div class="sidebar-link" data-page="tickets">
                 <i class="fas fa-ticket-alt link-icon"></i> Ticket System
             </div>
@@ -154,57 +154,6 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 32px;">
-                    <div class="z-card" id="brandingCard">
-                        <div class="z-card-header">
-                            <h3><i class="fas fa-paint-brush"></i> Bot Identity</h3>
-                            <span style="background:var(--accent-green); color:#fff; font-size:0.65rem; padding:3px 8px; border-radius:4px; font-weight:700; letter-spacing:0.5px;">LIVE</span>
-                        </div>
-                        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:20px;">Customize how the bot appears in this server. Changes apply to branded messages sent via webhooks.</p>
-                        
-                        <!-- Live Preview -->
-                        <div style="background:#2b2d31; border-radius:var(--radius-lg); padding:16px; margin-bottom:24px; border:1px solid #1e1f22;">
-                            <div style="display:flex; align-items:flex-start; gap:16px;">
-                                <div id="brandingPreviewAvatar" style="width:44px; height:44px; border-radius:50%; background:#5865f2; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center; font-weight:700; color:white; font-size:1.1rem;">
-                                    Z
-                                </div>
-                                <div style="flex:1;">
-                                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                                        <span id="brandingPreviewName" style="font-weight:600; color:#f2f3f5; font-size:0.95rem;">Zenith</span>
-                                        <span style="background:#5865f2; color:white; font-size:0.6rem; padding:1px 5px; border-radius:3px; font-weight:700;">BOT</span>
-                                        <span style="font-size:0.7rem; color:#949ba4;">Today at 12:00 PM</span>
-                                    </div>
-                                    <div style="font-size:0.85rem; color:#dbdee1; line-height:1.4;">Hello! This is how my messages will look in this server. 🎨</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="z-input-group">
-                            <label>Display Name</label>
-                            <input class="z-input" type="text" id="brandingName" placeholder="Leave empty to use default bot name" oninput="updateBrandingPreview()">
-                            <small style="color:var(--text-muted); font-size:0.72rem; margin-top:4px; display:block;">Overrides the bot's username in this server. Must be 1-80 characters.</small>
-                        </div>
-                        <div class="z-input-group" style="margin-top:16px;">
-                            <label>Avatar URL</label>
-                            <input class="z-input" type="text" id="brandingAvatar" placeholder="https://example.com/custom-avatar.png" oninput="updateBrandingPreview()">
-                            <small style="color:var(--text-muted); font-size:0.72rem; margin-top:4px; display:block;">Direct link to a .png, .jpg, or .gif image. Leave empty for default avatar.</small>
-                        </div>
-
-                        <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
-                            <button class="z-btn z-btn-primary" style="flex:1;" onclick="saveBranding()"><i class="fas fa-save"></i> Save Identity</button>
-                            <button class="z-btn z-btn-secondary" onclick="resetBranding()" style="flex-shrink:0;"><i class="fas fa-undo"></i> Reset</button>
-                        </div>
-
-                        <div style="margin-top:16px; border-top:1px solid var(--border-subtle); padding-top:16px;">
-                            <p style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; letter-spacing:0.5px; margin-bottom:10px;">Test Deployment</p>
-                            <div style="display:flex; gap:12px; align-items:flex-end;">
-                                <div class="z-input-group" style="flex:1; margin:0;">
-                                    <label style="font-size:0.72rem;">Channel ID</label>
-                                    <input class="z-input" type="text" id="brandingTestChannel" placeholder="Paste a channel ID to test">
-                                </div>
-                                <button class="z-btn z-btn-secondary" onclick="testBranding()" style="height:42px; white-space:nowrap;"><i class="fas fa-paper-plane"></i> Send Test</button>
-                            </div>
-                        </div>
-                    </div>
 
                     <div class="z-card" id="customBotCard">
                         <div class="z-card-header">
@@ -233,57 +182,10 @@
                         </div>
                     </div>
 
-                    <div class="z-card">
-                        <div class="z-card-header">
-                            <h3><i class="fab fa-discord"></i> Discord Community</h3>
-                        </div>
-                        <iframe src="https://discord.com/widget?id=1431859727285092403&theme=dark" width="100%" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
-                    </div>
                 </div>
             </section>
 
-            <!-- ===== GENERAL SETTINGS ===== -->
-            <section id="page-general" class="page-section">
-                <div class="page-header">
-                    <h1>Core Architecture</h1>
-                    <p>Primary configuration for Zenith integration.</p>
-                </div>
 
-                <div class="z-card">
-                    <div class="z-card-header">
-                        <h3><i class="fas fa-network-wired"></i> Network Configurations</h3>
-                    </div>
-                    <div class="input-row">
-                        <div class="z-input-group">
-                            <label>Welcome Channel ID</label>
-                            <input class="z-input" type="text" id="cfgWelcomeChannel" placeholder="123456789012345678">
-                        </div>
-                        <div class="z-input-group">
-                            <label>Log / Audit Channel ID</label>
-                            <input class="z-input" type="text" id="cfgLogChannel" placeholder="123456789012345678">
-                        </div>
-                    </div>
-                    <div class="input-row">
-                        <div class="z-input-group">
-                            <label>Leadership Channel ID</label>
-                            <input class="z-input" type="text" id="cfgLeadershipChannel" placeholder="123456789012345678">
-                        </div>
-                        <div class="z-input-group">
-                            <label>Ticket Category ID</label>
-                            <input class="z-input" type="text" id="cfgTicketCategory" placeholder="123456789012345678">
-                        </div>
-                    </div>
-                    <div class="input-row">
-                        <div class="z-input-group">
-                            <label>Google Sheets ID</label>
-                            <input class="z-input" type="text" id="cfgSpreadsheetId" placeholder="1BxiMvs0XRYFgCE9...">
-                        </div>
-                    </div>
-                    <div style="margin-top:24px;">
-                        <button class="z-btn z-btn-primary" id="btnSaveGeneral" onclick="saveGeneralConfig()"><i class="fas fa-save"></i> Save Architecture</button>
-                    </div>
-                </div>
-            </section>
 
             <!-- ===== WELCOME SYSTEM ===== -->
             <section id="page-welcome" class="page-section">
@@ -306,35 +208,57 @@
                     </label>
                 </div>
 
-                <div class="z-card">
-                    <div class="z-input-group">
-                        <label>Target Channel ID</label>
-                        <input class="z-input" type="text" id="welcomeChannelCfg" placeholder="Channel ID for welcomes">
+                <div class="ticket-builder-grid">
+                    <div class="z-card">
+                        <div class="input-row">
+                            <div class="z-input-group">
+                                <label>Welcome Channel</label>
+                                <select class="z-input" id="cfgWelcomeChannel"></select>
+                            </div>
+                            <div class="z-input-group">
+                                <label>Embed Title</label>
+                                <input class="z-input" type="text" id="welcomeTitle" placeholder="e.g. Welcome to {server}...">
+                            </div>
+                        </div>
+                        <div class="z-input-group">
+                            <label>Embed Message</label>
+                            <textarea class="z-input" id="welcomeMessage" placeholder="Use {user}, {server}, {memberCount} inside..."></textarea>
+                        </div>
+                        <div class="z-input-group">
+                            <label>Aura Color</label>
+                            <div class="color-picker-wrap">
+                                <input type="color" id="welcomeColor" value="#FFD700">
+                                <span style="color:var(--text-muted); font-size:0.9rem;" id="welcomeColorHex">#FFD700</span>
+                            </div>
+                        </div>
+                        <div class="z-input-group">
+                            <label>Image URL (Optional)</label>
+                            <input class="z-input" type="text" id="welcomeImage" placeholder="https://example.com/welcome-banner.png">
+                        </div>
+                        <div class="toggle-row" style="margin-top:12px;">
+                            <div class="toggle-info"><h4>Use Rich Embed</h4><p>When off, sends a plain text message with image attached.</p></div>
+                            <label class="toggle-switch"><input type="checkbox" id="welcomeUseEmbed" checked><span class="toggle-slider"></span></label>
+                        </div>
+                        <button class="z-btn z-btn-primary" onclick="saveModuleConfig('welcome')" style="margin-top:16px;"><i class="fas fa-save"></i> Deploy Settings</button>
                     </div>
-                    <div class="z-input-group">
-                        <label>Embed Title</label>
-                        <input class="z-input" type="text" id="welcomeTitle" placeholder="e.g. Welcome to {server}...">
-                    </div>
-                    <div class="z-input-group">
-                        <label>Embed Message</label>
-                        <textarea class="z-input" id="welcomeMessage" placeholder="Use {user}, {server}, {memberCount} inside..."></textarea>
-                    </div>
-                    <div class="z-input-group">
-                        <label>Aura Color</label>
-                        <div class="color-picker-wrap">
-                            <input type="color" id="welcomeColor" value="#FFD700">
-                            <span style="color:var(--text-muted); font-size:0.9rem;" id="welcomeColorHex">#FFD700</span>
+
+                    <div class="z-card" style="position:sticky; top:24px;">
+                        <h4 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:#949ba4; margin-bottom:16px; font-family:'Inter',sans-serif;">Welcome Preview</h4>
+                        <div id="welcomeDiscordPreview" style="border-radius:4px; overflow:hidden;">
+                            <div id="welcomePreviewEmbed" style="display:flex;">
+                                <div id="welcomePreviewColorBar" style="width:4px; border-radius:3px 0 0 3px; background:#FFD700; flex-shrink:0;"></div>
+                                <div style="background:#2b2d31; border:1px solid #1e1f22; border-left:none; border-radius:0 4px 4px 0; padding:16px; flex:1;">
+                                    <div id="welcomePreviewTitle" style="font-weight:700; font-size:1rem; color:#f2f3f5; margin-bottom:8px;">Welcome!</div>
+                                    <div id="welcomePreviewDesc" style="font-size:0.85rem; color:#dbdee1; line-height:1.5;">Welcome to the server, {user}!</div>
+                                    <img id="welcomePreviewImage" src="" style="width:100%; border-radius:4px; margin-top:12px; display:none;">
+                                </div>
+                            </div>
+                            <div id="welcomePreviewText" style="color:#dbdee1; font-size:0.9rem; display:none;">
+                                Welcome to the server, {user}!
+                                <img id="welcomePreviewImagePlain" src="" style="width:100%; border-radius:4px; margin-top:8px; display:none;">
+                            </div>
                         </div>
                     </div>
-                    <div class="z-input-group">
-                        <label>Image URL (Optional)</label>
-                        <input class="z-input" type="text" id="welcomeImage" placeholder="https://example.com/welcome-banner.png">
-                    </div>
-                    <div class="toggle-row" style="margin-top:12px;">
-                        <div class="toggle-info"><h4>Use Rich Embed</h4><p>When off, sends a plain text message with image attached (Component V2 style).</p></div>
-                        <label class="toggle-switch"><input type="checkbox" id="welcomeUseEmbed" checked><span class="toggle-slider"></span></label>
-                    </div>
-                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('welcome')" style="margin-top:16px;"><i class="fas fa-save"></i> Deploy Settings</button>
                 </div>
             </section>
 
@@ -359,25 +283,72 @@
                     </label>
                 </div>
 
-                <div class="z-card">
-                    <div class="z-card-header"><h3>Gain Rates</h3></div>
-                    <div class="input-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="ticket-builder-grid">
+                    <div class="z-card">
+                        <div class="z-card-header"><h3>Gain Rates</h3></div>
+                        <div class="input-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                            <div class="z-input-group">
+                                <label>XP Base (Min)</label>
+                                <input class="z-input" type="number" id="xpMin" value="5" min="1" max="100">
+                            </div>
+                            <div class="z-input-group">
+                                <label>XP Ceiling (Max)</label>
+                                <input class="z-input" type="number" id="xpMax" value="15" min="1" max="100">
+                            </div>
+                            <div class="z-input-group">
+                                <label>Delay (Seconds)</label>
+                                <input class="z-input" type="number" id="xpCooldown" value="60" min="0">
+                            </div>
+                        </div>
+
+                        <div class="z-input-group" style="margin-top:16px;">
+                            <label>Rank Card Background URL</label>
+                            <input class="z-input" type="text" id="levelingBackground" placeholder="https://example.com/rank-bg.png">
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Customize your server's rank cards with a premium background image.</p>
+                        </div>
+
+                        <div class="z-card-header" style="margin-top:24px;"><h3>Notification Protocol</h3></div>
                         <div class="z-input-group">
-                            <label>XP Base (Min)</label>
-                            <input class="z-input" type="number" id="xpMin" value="5" min="1" max="100">
+                            <label>Level-Up Broadcast Channel</label>
+                            <select class="z-input" id="levelUpChannel"></select>
+                        </div>
+                        
+                        <div class="z-card-header" style="margin-top:24px;"><h3>Level-Up Announcement</h3></div>
+                        <div class="input-row">
+                            <div class="z-input-group">
+                                <label>Embed Title</label>
+                                <input class="z-input" type="text" id="levelUpTitle" placeholder="e.g. Level Up!">
+                            </div>
+                            <div class="z-input-group">
+                                <label>Embed Color</label>
+                                <input class="z-input" type="color" id="levelUpColor" value="#FFD700">
+                            </div>
                         </div>
                         <div class="z-input-group">
-                            <label>XP Ceiling (Max)</label>
-                            <input class="z-input" type="number" id="xpMax" value="15" min="1" max="100">
+                            <label>Message</label>
+                            <textarea class="z-input" id="levelUpMessage" placeholder="Use {user}, {level}, {title}..."></textarea>
                         </div>
-                        <div class="z-input-group">
-                            <label>Delay (Seconds)</label>
-                            <input class="z-input" type="number" id="xpCooldown" value="60" min="0">
+                        <div class="toggle-row">
+                            <div class="toggle-info"><h4>Use Rich Embed</h4><p>Toggle between card and plain text.</p></div>
+                            <label class="toggle-switch"><input type="checkbox" id="levelUpUseEmbed" checked><span class="toggle-slider"></span></label>
                         </div>
+                        <button class="z-btn z-btn-primary" onclick="saveModuleConfig('leveling')" style="margin-top:16px;"><i class="fas fa-save"></i> Save Engine</button>
                     </div>
-                    <div class="z-input-group">
-                        <label>Level-Up Broadcast Channel</label>
-                        <input class="z-input" type="text" id="levelUpChannel" placeholder="Leave empty to use active channel">
+
+                    <div class="z-card" style="position:sticky; top:24px;">
+                        <h4 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:#949ba4; margin-bottom:16px; font-family:'Inter',sans-serif;">Level-Up Preview</h4>
+                        <div id="levelDiscordPreview" style="border-radius:4px; overflow:hidden;">
+                            <div id="levelPreviewEmbed" style="display:flex;">
+                                <div id="levelPreviewColorBar" style="width:4px; border-radius:3px 0 0 3px; background:#FFD700; flex-shrink:0;"></div>
+                                <div style="background:#2b2d31; border:1px solid #1e1f22; border-left:none; border-radius:0 4px 4px 0; padding:16px; flex:1;">
+                                    <div id="levelPreviewTitle" style="font-weight:700; font-size:1rem; color:#f2f3f5; margin-bottom:8px;">GG!</div>
+                                    <div id="levelPreviewDesc" style="font-size:0.85rem; color:#dbdee1; line-height:1.5;">{user} just reached level **{level}**!</div>
+                                </div>
+                            </div>
+                            <div id="levelPreviewText" style="color:#dbdee1; font-size:0.9rem; display:none;">
+                                {user} just reached level **{level}**!
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -453,21 +424,25 @@
                         <h3>Global Ticket Settings</h3>
                     </div>
                     <div class="input-grid">
-                        <div class="z-input-group">
-                            <label>Concurrency Limit</label>
-                            <input class="z-input" type="number" id="ticketsMaxActive" value="2" min="1" max="10">
+                        <div class="input-row">
+                            <div class="z-input-group">
+                                <label>Ticket Category</label>
+                                <select class="z-input" id="cfgTicketCategory"></select>
+                            </div>
+                            <div class="z-input-group">
+                                <label>Transcript Archive Channel</label>
+                                <select class="z-input" id="ticketsTranscriptChannel"></select>
+                            </div>
                         </div>
-                        <div class="z-input-group">
-                            <label>Transcript Archive Channel</label>
-                            <input class="z-input" type="text" id="ticketsTranscriptChannel" placeholder="Optional archival ID">
-                        </div>
-                        <div class="z-input-group">
-                            <label>Default Category ID</label>
-                            <input class="z-input" type="text" id="ticketCategoryId" placeholder="Empty for top-level">
-                        </div>
-                        <div class="z-input-group">
-                            <label>Admin Review Channel ID</label>
-                            <input class="z-input" type="text" id="ticketsApprovalChannel" placeholder="Enables approval step">
+                        <div class="input-row">
+                            <div class="z-input-group">
+                                <label>Max Active Tickets</label>
+                                <input class="z-input" type="number" id="ticketsMaxActive" value="2" min="1" max="10">
+                            </div>
+                            <div class="z-input-group">
+                                <label>Admin Review Channel</label>
+                                <select class="z-input" id="ticketsApprovalChannel"></select>
+                            </div>
                         </div>
                     </div>
                     <button class="z-btn z-btn-primary" onclick="saveModuleConfig('tickets')"><i class="fas fa-save"></i> Save Core</button>
@@ -484,7 +459,7 @@
                             <div class="input-grid">
                                 <div class="z-input-group">
                                     <label>Deployment Channel</label>
-                                    <input class="z-input" type="text" id="panelChannelId" placeholder="Channel ID" oninput="updatePanelPreview()">
+                                    <select class="z-input" id="panelChannelId"></select>
                                 </div>
                                 <div class="z-input-group">
                                     <label>Panel Header</label>
@@ -532,7 +507,7 @@
                                 </div>
                                 <div class="toggle-row" style="margin-top:4px;">
                                     <div class="toggle-info"><h4>Use Rich Embed</h4><p>When off, the panel uses Discord Components V2 (Container layout) instead of a classic embed.</p></div>
-                                    <label class="toggle-switch"><input type="checkbox" id="panelUseEmbed" checked><span class="toggle-slider"></span></label>
+                                    <label class="toggle-switch"><input type="checkbox" id="panelUseEmbed" onchange="updatePanelPreview()" checked><span class="toggle-slider"></span></label>
                                 </div>
                             </div>
 
@@ -552,7 +527,7 @@
                             <div id="discordPreview" style="border-radius:4px; overflow:hidden;">
                                 <div style="display:flex;">
                                     <div id="previewColorBar" style="width:4px; border-radius:3px 0 0 3px; background:#FFD700; flex-shrink:0;"></div>
-                                    <div style="background:#2b2d31; border:1px solid #1e1f22; border-left:none; border-radius:0 4px 4px 0; padding:16px; flex:1;">
+                                    <div id="previewContentBlock" style="background:#2b2d31; border:1px solid #1e1f22; border-left:none; border-radius:0 4px 4px 0; padding:16px; flex:1;">
                                         <div id="previewTitle" style="font-weight:700; font-size:1rem; color:#f2f3f5; margin-bottom:8px;">Command Support</div>
                                         <div id="previewDesc" style="font-size:0.85rem; color:#dbdee1; line-height:1.5;">Select your inquiry path...</div>
                                     </div>
@@ -621,17 +596,17 @@
                         </div>
                         <div class="z-input-group">
                             <label>Admin Approval Channel ID</label>
-                            <input type="text" class="z-input" id="marketApprovalChannel" placeholder="e.g. 123456789">
+                            <select class="z-input" id="marketApprovalChannel"></select>
                             <small style="color:var(--text-muted); font-size:0.75rem;">Where listings go for manual review.</small>
                         </div>
                         <div class="z-input-group">
                             <label>Owner/Fee Notification Channel ID</label>
-                            <input type="text" class="z-input" id="marketOwnerChannel" placeholder="e.g. 123456789">
+                            <select class="z-input" id="marketOwnerChannel"></select>
                             <small style="color:var(--text-muted); font-size:0.75rem;">Where YOU receive 5% fee confirmation buttons.</small>
                         </div>
                         <div class="z-input-group">
                             <label>Middleman Role ID</label>
-                            <input type="text" class="z-input" id="marketMiddlemanRole" placeholder="e.g. 123456789">
+                            <select class="z-input" id="marketMiddlemanRole"></select>
                             <small style="color:var(--text-muted); font-size:0.75rem;">Role assigned to verified Middlemen.</small>
                         </div>
                         <div class="z-input-group">
@@ -661,9 +636,12 @@
                     <div style="margin-top:30px; border-top:1px solid var(--border-medium); padding-top:20px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <h3>📝 Custom Market Questions</h3>
-                            <button class="z-btn z-btn-secondary" onclick="addMarketQuestion()">+ Add Question</button>
+                            <div>
+                                <button class="z-btn z-btn-secondary" onclick="loadDefaultMarketQuestions()" style="margin-right: 8px;"><i class="fas fa-download"></i> Load Defaults</button>
+                                <button class="z-btn z-btn-secondary" onclick="addMarketQuestion()">+ Add Question</button>
+                            </div>
                         </div>
-                        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Customize what the bot asks when someone sells an account. Leave empty to use the default 17 RoK questions.</p>
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Customize what the bot asks when someone sells an account. Leave empty to use the default 18 RoK questions.</p>
                         <div id="marketQuestionsList" style="display:flex; flex-direction:column; gap:10px;"></div>
                     </div>
 
@@ -726,7 +704,7 @@
                     </div>
                     <div class="z-input-group">
                         <label>Incident Log Array</label>
-                        <input class="z-input" type="text" id="automodLogChannel" placeholder="Log channel ID for security breaches">
+                        <select class="z-input" id="automodLogChannel"></select>
                     </div>
                     <button class="z-btn z-btn-primary" onclick="saveModuleConfig('automod')"><i class="fas fa-save"></i> Save Security Protocol</button>
                 </div>
@@ -754,9 +732,15 @@
                 </div>
 
                 <div class="z-card">
-                    <div class="z-input-group">
-                        <label>Master Log Terminal</label>
-                        <input class="z-input" type="text" id="loggingChannel" placeholder="Channel ID">
+                    <div class="input-row">
+                        <div class="z-input-group">
+                            <label>Audit Log Channel</label>
+                            <select class="z-input" id="cfgLogChannel"></select>
+                        </div>
+                        <div class="z-input-group">
+                            <label>Master Log Terminal</label>
+                            <select class="z-input" id="loggingChannel"></select>
+                        </div>
                     </div>
                     <div class="toggle-row">
                         <div class="toggle-info"><h4>Data Amendments</h4><p>Log message modifications.</p></div>
@@ -767,20 +751,28 @@
                         <label class="toggle-switch"><input type="checkbox" id="logDeletes" checked><span class="toggle-slider"></span></label>
                     </div>
                     <div class="toggle-row">
-                        <div class="toggle-info"><h4>Immigration Traffic</h4><p>Log join and exit occurrences.</p></div>
+                        <div class="toggle-info"><h4>Immigration Traffic</h4><p>Log join, exit, and ban occurrences.</p></div>
                         <label class="toggle-switch"><input type="checkbox" id="logMembers" checked><span class="toggle-slider"></span></label>
                     </div>
                     <div class="toggle-row">
-                        <div class="toggle-info"><h4>Rank Revisions</h4><p>Log role adjustments.</p></div>
-                        <label class="toggle-switch"><input type="checkbox" id="logRoles"><span class="toggle-slider"></span></label>
+                        <div class="toggle-info"><h4>Rank Revisions</h4><p>Log role adjustments and assignments.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logRoles" checked><span class="toggle-slider"></span></label>
                     </div>
                     <div class="toggle-row">
                         <div class="toggle-info"><h4>Sector Edits</h4><p>Log channel structural shifts.</p></div>
-                        <label class="toggle-switch"><input type="checkbox" id="logChannels"><span class="toggle-slider"></span></label>
+                        <label class="toggle-switch"><input type="checkbox" id="logChannels" checked><span class="toggle-slider"></span></label>
                     </div>
                     <div class="toggle-row">
-                        <div class="toggle-info"><h4>Excommunications</h4><p>Log ban and kick enforcement.</p></div>
-                        <label class="toggle-switch"><input type="checkbox" id="logBans" checked><span class="toggle-slider"></span></label>
+                        <div class="toggle-info"><h4>Voice Activity</h4><p>Log joins, moves, and leaves in voice channels.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logVoice" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Server Integrity</h4><p>Log server updates (icon, name, splash).</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logServer" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info"><h4>Invite Tracking</h4><p>Log created and deleted invites.</p></div>
+                        <label class="toggle-switch"><input type="checkbox" id="logInvites" checked><span class="toggle-slider"></span></label>
                     </div>
                     <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('logging')"><i class="fas fa-save"></i> Synchronize Logs</button>
                 </div>
@@ -820,7 +812,7 @@
                     </div>
                     <div class="z-input-group" style="margin-top:24px;">
                         <label>Role Key to Dispatch</label>
-                        <input class="z-input" type="text" id="autoRoleInput" placeholder="Role ID...">
+                        <select class="z-input" id="autoRoleInput"></select>
                     </div>
                     <button class="z-btn z-btn-primary" onclick="saveModuleConfig('autorole')"><i class="fas fa-save"></i> Save Protocols</button>
                 </div>
@@ -851,7 +843,7 @@
                     <div class="input-row">
                         <div class="z-input-group">
                             <label>Reactor Vector</label>
-                            <input class="z-input" type="text" id="countingChannel" placeholder="Channel ID">
+                            <select class="z-input" id="countingChannel"></select>
                         </div>
                         <div class="z-input-group">
                             <label>Stack Position</label>
@@ -914,7 +906,7 @@
                     </div>
                     <div class="z-input-group" style="margin-top:24px;">
                         <label>Telemetry Sector (Category ID)</label>
-                        <input class="z-input" type="text" id="statsCategoryId" placeholder="Where the channels will be constructed">
+                        <select class="z-input" id="statsCategoryId"></select>
                     </div>
                     <button class="z-btn z-btn-primary" onclick="saveModuleConfig('serverstats')"><i class="fas fa-save"></i> Erect Towers</button>
                 </div>
@@ -1044,9 +1036,19 @@
                         <h3>Tracker Configuration</h3>
                     </div>
                     <div class="input-row">
+                        <div class="input-row">
+                            <div class="z-input-group">
+                                <label>Leadership Channel</label>
+                                <select class="z-input" id="cfgLeadershipChannel"></select>
+                            </div>
+                            <div class="z-input-group">
+                                <label>Target Role (Officers)</label>
+                                <select class="z-input" id="r4TrackingRole"></select>
+                            </div>
+                        </div>
                         <div class="z-input-group">
-                            <label>Target Role ID (Officers)</label>
-                            <input class="z-input" type="text" id="r4TrackingRole" placeholder="Role ID to track">
+                            <label>Google Sheets ID (Export Database)</label>
+                            <input class="z-input" type="text" id="cfgSpreadsheetId" placeholder="1BxiMvs0XRYFgCE9...">
                         </div>
                     </div>
                     <div class="input-row">
@@ -1126,7 +1128,7 @@
                 <div class="z-card">
                     <div class="z-input-group">
                         <label>Roles to Assign (Comma separated IDs)</label>
-                        <textarea class="z-input" id="autoroleIds" placeholder="e.g. 123456789012345678, 876543210987654321"></textarea>
+                        <select class="z-input" id="autoroleIds" multiple size="4"></select>
                     </div>
                     <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('autorole')"><i class="fas fa-save"></i> Save Protocols</button>
                 </div>
@@ -1153,21 +1155,53 @@
                     </label>
                 </div>
 
-                <div class="z-card">
-                    <div class="z-input-group">
-                        <label>Swear Jar Log Channel</label>
-                        <input class="z-input" type="text" id="swearJarChannel" placeholder="Channel ID for the jar messages">
+                <div class="ticket-builder-grid">
+                    <div class="z-card">
+                        <div class="z-input-group">
+                            <label>Swear Jar Log Channel</label>
+                            <select class="z-input" id="swearJarChannel"></select>
+                        </div>
+                        <div class="z-input-group">
+                            <label>Trigger Words (Comma separated)</label>
+                            <textarea class="z-input" id="swearJarWords" placeholder="e.g. word1, word2, word3"></textarea>
+                            <small style="color:var(--text-muted);">Leave empty to use global AutoMod word list.</small>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-info"><h4>Mention Citizen</h4><p>Ping the user when they contribute to the jar.</p></div>
+                            <label class="toggle-switch"><input type="checkbox" id="swearJarPing" checked><span class="toggle-slider"></span></label>
+                        </div>
+
+                        <div class="z-card-header" style="margin-top:24px;"><h3>Jar Contribution Alert</h3></div>
+                        <div class="input-row">
+                            <div class="z-input-group">
+                                <label>Embed Title</label>
+                                <input class="z-input" type="text" id="swearJarTitle" placeholder="e.g. Swear Jar Contribution!">
+                            </div>
+                            <div class="z-input-group">
+                                <label>Embed Color</label>
+                                <input class="z-input" type="color" id="swearJarColor" value="#FFD700">
+                            </div>
+                        </div>
+                        <div class="z-input-group">
+                            <label>Message</label>
+                            <textarea class="z-input" id="swearJarMessage" placeholder="Use {user}, {word}, {fines}..."></textarea>
+                        </div>
+                        
+                        <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('swearjar')"><i class="fas fa-save"></i> Establish Jar</button>
                     </div>
-                    <div class="z-input-group">
-                        <label>Trigger Words (Comma separated)</label>
-                        <textarea class="z-input" id="swearJarWords" placeholder="e.g. word1, word2, word3"></textarea>
-                        <small style="color:var(--text-muted);">Leave empty to use global AutoMod word list.</small>
+
+                    <div class="z-card" style="position:sticky; top:24px;">
+                        <h4 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:#949ba4; margin-bottom:16px; font-family:'Inter',sans-serif;">Jar Alert Preview</h4>
+                        <div id="swearDiscordPreview" style="border-radius:4px; overflow:hidden;">
+                            <div style="display:flex;">
+                                <div id="swearPreviewColorBar" style="width:4px; border-radius:3px 0 0 3px; background:#FFD700; flex-shrink:0;"></div>
+                                <div style="background:#2b2d31; border:1px solid #1e1f22; border-left:none; border-radius:0 4px 4px 0; padding:16px; flex:1;">
+                                    <div id="swearPreviewTitle" style="font-weight:700; font-size:1rem; color:#f2f3f5; margin-bottom:8px;">Swear Jar!</div>
+                                    <div id="swearPreviewDesc" style="font-size:0.85rem; color:#dbdee1; line-height:1.5;">{user} just added a coin to the jar!</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="toggle-row">
-                        <div class="toggle-info"><h4>Mention Citizen</h4><p>Ping the user when they contribute to the jar.</p></div>
-                        <label class="toggle-switch"><input type="checkbox" id="swearJarPing" checked><span class="toggle-slider"></span></label>
-                    </div>
-                    <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('swearjar')"><i class="fas fa-save"></i> Establish Jar</button>
                 </div>
             </section>
 
@@ -1212,7 +1246,7 @@
                 </div>
                 <div class="z-input-group">
                     <label>Parent Category ID</label>
-                    <input class="z-input" type="text" id="modalCategoryId" placeholder="Overrides global default">
+                    <select class="z-input" id="modalCategoryId"></select>
                 </div>
                 <div class="z-input-group">
                     <label>Option Emoji</label>
@@ -1223,11 +1257,11 @@
             <div class="input-row">
                 <div class="z-input-group">
                     <label>Assigned Guard (Role IDs, comma-seperated)</label>
-                    <input class="z-input" type="text" id="modalStaffRoles" placeholder="Leave empty for hierarchy">
+                    <select class="z-input" id="modalStaffRoles" multiple size="3"></select>
                 </div>
                 <div class="z-input-group">
                     <label>Pings on Spin-up</label>
-                    <input class="z-input" type="text" id="modalPingRoles" placeholder="Role IDs to @ping">
+                    <select class="z-input" id="modalPingRoles" multiple size="3"></select>
                 </div>
             </div>
 

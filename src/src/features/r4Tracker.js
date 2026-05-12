@@ -1,0 +1,83 @@
+const { getDb } = require('../config/database');
+const { getISOWeekString } = require('../utils/dateHelpers');
+const { exportR4WeeklyData } = require('../utils/googleSheetsConnector');
+
+module.exports = (client) => {
+    // Run every hour to check for past weeks that haven't been processed
+    setInterval(async () => {
+        try {
+            const db = await getDb();
+            const currentWeekId = getISOWeekString();
+
+            // Find all records that are from previous weeks and haven't been processed
+            const unprocessed = await db.all(`SELECT * FROM r4_tracking WHERE weekId < ? AND isProcessed = 0`, [currentWeekId]);
+            if (!unprocessed || unprocessed.length === 0) return;
+
+            // Group by guildId and weekId to process them together
+            const groups = {};
+            for (const record of unprocessed) {
+                const key = `${record.guildId}_${record.weekId}`;
+                if (!groups[key]) groups[key] = { guildId: record.guildId, weekId: record.weekId, records: [] };
+                groups[key].records.push(record);
+            }
+
+            for (const key in groups) {
+                const group = groups[key];
+                const conf = await db.get(`SELECT r4TrackingAdQuota, r4TrackingMsgQuota, spreadsheetId FROM module_configs mc JOIN guild_configs gc ON mc.guildId = gc.guildId WHERE mc.guildId = ?`, [group.guildId]);
+                
+                if (!conf) continue;
+
+                const adQuota = conf.r4TrackingAdQuota || 40;
+                const msgQuota = conf.r4TrackingMsgQuota || 245;
+
+                const sheetData = [];
+
+                for (const record of group.records) {
+                    const adPct = (record.ads / adQuota) * 100;
+                    const msgPct = (record.messages / msgQuota) * 100;
+                    const totalPct = Math.min(Math.round(adPct + msgPct), 200);
+
+                    let status = 'Failing';
+                    if (record.excused) status = 'Excused';
+                    else if (totalPct >= 100) status = 'Passed';
+                    else if (totalPct >= 75) status = 'Warning';
+
+                    sheetData.push({
+                        userId: record.userId,
+                        weekId: record.weekId,
+                        ads: record.ads,
+                        messages: record.messages,
+                        progressPct: totalPct,
+                        status: status
+                    });
+
+                    // If failing (<75%) and not excused, send DM
+                    if (totalPct < 75 && !record.excused) {
+                        try {
+                            const user = await client.users.fetch(record.userId);
+                            if (user) {
+                                await user.send(`⚠️ **R4 Activity Warning**\n\nYou did not meet the minimum required activity quota (75%) for week **${record.weekId}**.\nYour total completion was **${totalPct}%**.\n\nPlease ensure you maintain your activity. If you need to be excused, contact leadership.`);
+                            }
+                        } catch (e) {
+                            console.log(`Could not send DM to failing user ${record.userId}`);
+                        }
+                    }
+
+                    // Mark as processed
+                    await db.run(`UPDATE r4_tracking SET isProcessed = 1 WHERE userId = ? AND guildId = ? AND weekId = ?`, [record.userId, record.guildId, record.weekId]);
+                }
+
+                // Export to Google Sheets
+                if (conf.spreadsheetId) {
+                    try {
+                        await exportR4WeeklyData(conf.spreadsheetId, group.weekId, sheetData);
+                    } catch (e) {
+                        console.log(`Error syncing R4 week ${group.weekId} to sheets for guild ${group.guildId}:`, e.message);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error in R4 Tracker Cron Job:', error);
+        }
+    }, 60 * 60 * 1000); // 1 hour
+};

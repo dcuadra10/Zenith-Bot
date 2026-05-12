@@ -65,11 +65,6 @@ module.exports = {
                     const opt = data.buttonRows[rIdx].options[oIdx];
                     const guildConfigs = await db.get(`SELECT * FROM guild_configs WHERE guildId = ?`, [interaction.guildId]);
                     const moduleConfigs = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [interaction.guildId]);
-                    
-                    if (!moduleConfigs || !moduleConfigs.ticketsEnabled) {
-                        return interaction.reply({ content: '❌ The ticket system is currently disabled.', ephemeral: true });
-                    }
-                    
                     await handleTicketSelection(interaction, opt, guildConfigs, moduleConfigs);
                 }
 
@@ -207,10 +202,6 @@ module.exports = {
                 const guildConfigs = await db.get(`SELECT * FROM guild_configs WHERE guildId = ?`, [interaction.guildId]);
                 const moduleConfigs = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [interaction.guildId]);
 
-                if (!moduleConfigs || !moduleConfigs.ticketsEnabled) {
-                    return interaction.reply({ content: '❌ The ticket system is currently disabled.', ephemeral: true });
-                }
-
                 await handleTicketSelection(interaction, opt, guildConfigs, moduleConfigs, panelId, dIdx, oIdx);
             } else if (interaction.customId === 'app_edit_select') {
                 await handleApplicationStartButton(interaction);
@@ -243,10 +234,6 @@ module.exports = {
                 
                 const guildConfigs = await db.get(`SELECT * FROM guild_configs WHERE guildId = ?`, [interaction.guildId]);
                 const moduleConfigs = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [interaction.guildId]);
-
-                if (!moduleConfigs || !moduleConfigs.ticketsEnabled) {
-                    return interaction.reply({ content: '❌ The ticket system is currently disabled.', ephemeral: true });
-                }
 
                 const answers = [];
                 // Only first 5 questions could be rendered in modal
@@ -281,6 +268,7 @@ module.exports = {
                 const { handleMarketInteraction } = require('../features/market');
                 await handleMarketInteraction(interaction);
             }
+        }
         }
     },
 };
