@@ -457,26 +457,26 @@
                                 <span style="background:var(--gold-800); color:#fff; font-size:0.7rem; padding:4px 8px; border-radius:4px; font-weight:700;">NEW</span>
                             </div>
 
-                            <div class="toggle-row" style="margin:16px 0; background:rgba(255,215,0,0.05); padding:12px; border-radius:8px; border:1px solid rgba(255,215,0,0.1);">
+                            <!-- Mode Toggle (Full Width) -->
+                            <div class="toggle-row" style="margin:20px 0; background:rgba(255,215,0,0.05); padding:16px; border-radius:8px; border:1px solid rgba(255,215,0,0.1); display:flex; justify-content:space-between; align-items:center;">
                                 <div class="toggle-info">
-                                    <h4 style="color:var(--gold-text); margin-bottom:2px;">Components V2 (Container)</h4>
-                                    <p style="font-size:0.75rem; color:var(--text-muted);">ON = Modular Container (Discohook style). OFF = Classic Discord Embed.</p>
+                                    <h4 style="color:var(--gold-text); margin-bottom:4px; font-size:0.95rem;">Components V2 (Container)</h4>
+                                    <p style="font-size:0.8rem; color:var(--text-muted);">Use modern modular cards (Discohook style) or classic embeds.</p>
                                 </div>
                                 <label class="toggle-switch"><input type="checkbox" id="panelUseEmbed" onchange="toggleV2Mode()"><span class="toggle-slider"></span></label>
                             </div>
 
-                            <div class="input-grid">
-                                <div class="z-input-group">
-                                    <label>Deployment Channel</label>
-                                    <select class="z-input" id="panelChannelId"></select>
-                                </div>
+                            <!-- Channel Selection (Always Visible) -->
+                            <div class="z-input-group" style="margin-bottom:24px;">
+                                <label style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Deployment Channel</label>
+                                <select class="z-input" id="panelChannelId" style="background:rgba(0,0,0,0.2); border-color:var(--border-medium);"></select>
                             </div>
 
                             <!-- V2 Modular Editor (Hidden by default) -->
-                            <div id="v2EditorContainer" style="display:none; margin-top:24px;">
-                                <div class="z-card-header" style="margin-bottom:16px;">
-                                    <h3>Container Components</h3>
-                                    <p style="font-size:0.8rem; color:var(--text-muted);">Add and arrange text, sections, and separators inside your container.</p>
+                            <div id="v2EditorContainer" style="display:none; border-top:1px solid var(--border-medium); padding-top:24px; animation: fadeIn 0.3s ease;">
+                                <div class="z-card-header" style="margin-bottom:20px;">
+                                    <h3 style="font-size:1.1rem;"><i class="fas fa-cubes" style="color:var(--gold-text); margin-right:8px;"></i> Container Components</h3>
+                                    <p style="font-size:0.8rem; color:var(--text-muted);">Build your message structure piece by piece.</p>
                                 </div>
                                 
                                 <div id="v2ComponentsList" style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
@@ -484,22 +484,22 @@
                                 </div>
 
                                 <div style="position:relative;">
-                                    <button class="z-btn z-btn-secondary" style="width:100%; justify-content:center;" onclick="toggleAddMenu()">
-                                        <i class="fas fa-plus"></i> Add Component
+                                    <button class="z-btn z-btn-secondary" style="width:100%; justify-content:center; padding:12px; border:1px dashed var(--gold-800); background:rgba(255,215,0,0.03);" onclick="toggleAddMenu()">
+                                        <i class="fas fa-plus-circle"></i> Add New Component
                                     </button>
-                                    <div id="addComponentMenu" class="z-dropdown-content" style="display:none; position:absolute; bottom:100%; left:0; width:100%; background:#2b2d31; border:1px solid #1e1f22; border-radius:8px; overflow:hidden; z-index:100; margin-bottom:8px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-                                        <div class="z-dropdown-item" onclick="addV2Component('text')"><i class="fas fa-align-left"></i> Text Display</div>
-                                        <div class="z-dropdown-item" onclick="addV2Component('section')"><i class="fas fa-th-large"></i> Section (Text + Accessory)</div>
-                                        <div class="z-dropdown-item" onclick="addV2Component('separator')"><i class="fas fa-minus"></i> Separator</div>
-                                        <div class="z-dropdown-item" onclick="addV2Component('mediaGallery')"><i class="fas fa-images"></i> Media Gallery</div>
-                                        <div class="z-dropdown-item" onclick="addV2Component('actionRow')"><i class="fas fa-bars"></i> Action Row (Buttons/Selects)</div>
+                                    <div id="addComponentMenu" class="z-dropdown-content" style="display:none; position:absolute; bottom:100%; left:0; width:100%; background:#2b2d31; border:1px solid #1e1f22; border-radius:12px; overflow:hidden; z-index:100; margin-bottom:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+                                        <div class="z-dropdown-item" style="padding:14px;" onclick="addV2Component('text')"><i class="fas fa-align-left" style="width:20px;"></i> Text Display</div>
+                                        <div class="z-dropdown-item" style="padding:14px;" onclick="addV2Component('section')"><i class="fas fa-th-large" style="width:20px;"></i> Section (Text + Thumbnail)</div>
+                                        <div class="z-dropdown-item" style="padding:14px;" onclick="addV2Component('separator')"><i class="fas fa-minus" style="width:20px;"></i> Separator</div>
+                                        <div class="z-dropdown-item" style="padding:14px;" onclick="addV2Component('mediaGallery')"><i class="fas fa-images" style="width:20px;"></i> Media Gallery</div>
+                                        <div class="z-dropdown-item" style="padding:14px;" onclick="addV2Component('actionRow')"><i class="fas fa-bars" style="width:20px;"></i> Action Row (Buttons/Selects)</div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Classic Panel Fields -->
-                            <div id="classicPanelFields">
-                                <div class="input-row" style="margin-top:24px;">
+                            <div id="classicPanelFields" style="animation: fadeIn 0.3s ease;">
+                                <div class="input-row" style="margin-top:0;">
                                     <div class="z-input-group">
                                         <label>Panel Header</label>
                                         <input class="z-input" type="text" id="panelTitle" placeholder="Command Support" oninput="updatePanelPreview()">
@@ -512,7 +512,7 @@
                                 <div class="input-row">
                                     <div class="z-input-group">
                                         <label>Directives</label>
-                                        <textarea class="z-input" id="panelDescription" placeholder="Select your inquiry path..." oninput="updatePanelPreview()"></textarea>
+                                        <textarea class="z-input" id="panelDescription" style="min-height:100px;" placeholder="Select your inquiry path..." oninput="updatePanelPreview()"></textarea>
                                     </div>
                                     <div class="z-input-group">
                                         <label>Directive Emoji</label>
@@ -527,7 +527,7 @@
                                     </div>
                                 </div>
 
-                                <div style="margin-top:24px; border-top:1px solid var(--border-medium); padding-top:24px;">
+                                <div style="margin-top:32px; border-top:1px solid var(--border-medium); padding-top:24px;">
                                     <div class="z-card-header" style="margin-bottom:12px;">
                                         <h3>Routing Modules</h3>
                                     </div>
@@ -539,10 +539,10 @@
                                     </div>
                                 </div>
 
-                                <div style="margin-top:24px; border-top:1px solid var(--border-medium); padding-top:24px;">
+                                <div style="margin-top:32px; border-top:1px solid var(--border-medium); padding-top:24px;">
                                     <div class="z-input-group">
                                         <label>Panel Image URL (Optional)</label>
-                                        <input class="z-input" type="text" id="panelImageUrl" placeholder="https://example.com/panel-banner.png">
+                                        <input class="z-input" type="text" id="panelImageUrl" placeholder="https://example.com/panel-banner.png" oninput="updatePanelPreview()">
                                     </div>
                                 </div>
                             </div>
