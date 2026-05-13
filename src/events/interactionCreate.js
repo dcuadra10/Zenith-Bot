@@ -108,6 +108,25 @@ module.exports = {
                 try {
                     const discordTranscripts = require('discord-html-transcripts');
                     
+                    // Capture application answers from the welcome embed before generating transcript
+                    try {
+                        const pinnedMessages = await interaction.channel.messages.fetch({ limit: 10 });
+                        const welcomeMsg = pinnedMessages.find(m => m.author.id === client.user.id && m.embeds.length > 0 && m.embeds[0].fields?.length > 0);
+                        if (welcomeMsg) {
+                            const answerFields = welcomeMsg.embeds[0].fields.filter(f => f.name.startsWith('Q'));
+                            if (answerFields.length > 0) {
+                                const { EmbedBuilder } = require('discord.js');
+                                const summaryEmbed = new EmbedBuilder()
+                                    .setTitle('📋 Application Responses')
+                                    .setColor('#ffd700')
+                                    .setDescription(answerFields.map(f => `**${f.name}**\n${f.value}`).join('\n\n'))
+                                    .setFooter({ text: 'Archived at ticket closure' })
+                                    .setTimestamp();
+                                await interaction.channel.send({ embeds: [summaryEmbed] });
+                            }
+                        }
+                    } catch (e) { /* silently continue if answer capture fails */ }
+                    
                     const attachment = await discordTranscripts.createTranscript(interaction.channel, {
                         limit: -1, 
                         returnType: 'attachment',
