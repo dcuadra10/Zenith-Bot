@@ -126,9 +126,9 @@ function buildEmbedMessage(opts) {
  */
 function buildMessage(useEmbed, opts) {
     if (useEmbed) {
-        return buildEmbedMessage(opts);
-    } else {
         return buildV2Message(opts);
+    } else {
+        return buildEmbedMessage(opts);
     }
 }
 
