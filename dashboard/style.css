@@ -433,6 +433,11 @@ textarea.z-input { resize: vertical; min-height: 100px; line-height: 1.6; }
     box-shadow: none !important;
     transition: var(--transition) !important;
 }
+.ts-wrapper.z-input {
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
 .ts-wrapper.focus .ts-control, .ts-control.focus {
     border-color: var(--gold-500) !important;
     background: rgba(0, 0, 0, 0.5) !important;

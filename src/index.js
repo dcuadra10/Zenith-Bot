@@ -164,6 +164,75 @@ app.get('/api/guilds', authenticateToken, async (req, res) => {
     }
 });
 
+app.get('/api/guild/:id/stats', authenticateToken, async (req, res) => {
+    try {
+        const guildId = req.params.id;
+        const hasAdmin = await checkAdmin(req.user.id, guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'No autorizado' });
+
+        const guild = client.guilds.cache.get(guildId);
+        if (!guild) return res.status(404).json({ error: 'Guild not found' });
+
+        const bots = guild.members.cache.filter(m => m.user.bot).size;
+        const citizens = guild.memberCount - bots;
+        const communications = guild.channels.cache.size;
+        const boosts = guild.premiumSubscriptionCount || 0;
+
+        res.json({
+            citizens,
+            bots,
+            communications,
+            boosts
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.get('/api/guild/:id/channels', authenticateToken, async (req, res) => {
+    try {
+        const guildId = req.params.id;
+        const hasAdmin = await checkAdmin(req.user.id, guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'No autorizado' });
+
+        const guild = client.guilds.cache.get(guildId);
+        if (!guild) return res.status(404).json({ error: 'Guild not found' });
+
+        const channels = guild.channels.cache.map(c => ({
+            id: c.id,
+            name: c.name,
+            type: c.type,
+            parentId: c.parentId
+        }));
+        res.json(channels);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.get('/api/guild/:id/roles', authenticateToken, async (req, res) => {
+    try {
+        const guildId = req.params.id;
+        const hasAdmin = await checkAdmin(req.user.id, guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'No autorizado' });
+
+        const guild = client.guilds.cache.get(guildId);
+        if (!guild) return res.status(404).json({ error: 'Guild not found' });
+
+        const roles = guild.roles.cache.map(r => ({
+            id: r.id,
+            name: r.name,
+            color: r.hexColor
+        }));
+        res.json(roles);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // GET Settings for a specific Guild
 app.get('/api/config/:guildId', authenticateToken, async (req, res) => {
     try {
