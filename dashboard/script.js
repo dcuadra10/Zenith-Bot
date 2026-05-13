@@ -1069,39 +1069,57 @@ function updatePanelPreview() {
     const cb = document.getElementById('previewColorBar');
     const content = document.getElementById('previewContentBlock');
     const titleEl = document.getElementById('previewTitle');
+    const descEl = document.getElementById('previewDesc');
+    const imgEl = document.getElementById('previewImage');
+    const imageUrl = getVal('panelImageUrl');
+    const embedWrap = cb.parentElement; // the flex wrapper
 
     if (useEmbed) {
+        // Components V2 / Container style — rounded card with accent color border
+        cb.style.display = 'none';
+        embedWrap.style.display = 'block';
+        content.style.background = '#2b2d31';
+        content.style.border = `2px solid ${color}`;
+        content.style.borderRadius = '8px';
+        content.style.borderLeft = `2px solid ${color}`;
+        content.style.padding = '20px';
+        content.style.boxShadow = `0 0 12px ${color}22`;
+        titleEl.style.fontSize = '1.1rem';
+        titleEl.style.fontWeight = '700';
+        titleEl.style.color = '#f2f3f5';
+        descEl.style.color = '#dbdee1';
+        titleEl.style.display = '';
+        descEl.style.display = '';
+        if (imgEl) {
+            if (imageUrl) { imgEl.src = imageUrl; imgEl.style.display = 'block'; }
+            else { imgEl.style.display = 'none'; }
+        }
+    } else {
+        // Plain embed — classic Discord embed with color bar on the left
         cb.style.display = 'block';
         cb.style.background = color;
+        cb.style.borderRadius = '3px 0 0 3px';
+        embedWrap.style.display = 'flex';
         content.style.background = '#2b2d31';
         content.style.border = '1px solid #1e1f22';
         content.style.borderLeft = 'none';
+        content.style.borderRadius = '0 4px 4px 0';
         content.style.padding = '16px';
+        content.style.boxShadow = 'none';
         titleEl.style.fontSize = '1rem';
         titleEl.style.fontWeight = '700';
-    } else {
-        cb.style.display = 'none';
-        content.style.background = 'transparent';
-        content.style.border = 'none';
-        content.style.padding = '0 0 16px 0';
-        titleEl.style.fontSize = '1.3rem';
-        titleEl.style.fontWeight = '800';
+        titleEl.style.color = '#f2f3f5';
+        descEl.style.color = '#dbdee1';
+        titleEl.style.display = '';
+        descEl.style.display = '';
+        if (imgEl) {
+            if (imageUrl) { imgEl.src = imageUrl; imgEl.style.display = 'block'; }
+            else { imgEl.style.display = 'none'; }
+        }
     }
 
     titleEl.innerHTML = formatDiscordText(fullTitle);
-    document.getElementById('previewDesc').innerHTML = formatDiscordText(fullDesc);
-
-    // Image preview
-    const imageUrl = getVal('panelImageUrl');
-    const imgEl = document.getElementById('previewImage');
-    if (imgEl) {
-        if (imageUrl) {
-            imgEl.src = imageUrl;
-            imgEl.style.display = 'block';
-        } else {
-            imgEl.style.display = 'none';
-        }
-    }
+    descEl.innerHTML = formatDiscordText(fullDesc);
 
     // Update select menu previews
     const menusContainer = document.getElementById('previewMenus');
