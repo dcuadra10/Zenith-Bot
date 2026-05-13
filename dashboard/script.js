@@ -1075,16 +1075,20 @@ function updatePanelPreview() {
     const embedWrap = cb.parentElement; // the flex wrapper
 
     if (useEmbed) {
-        // Components V2 / Container style — rounded card with accent color border
-        cb.style.display = 'none';
-        embedWrap.style.display = 'block';
+        // Components V2 / Container — rounded card with thin sidebar color, everything inside
+        cb.style.display = 'block';
+        cb.style.background = color;
+        cb.style.width = '4px';
+        cb.style.borderRadius = '8px 0 0 8px';
+        cb.style.flexShrink = '0';
+        embedWrap.style.display = 'flex';
         content.style.background = '#2b2d31';
-        content.style.border = `2px solid ${color}`;
-        content.style.borderRadius = '8px';
-        content.style.borderLeft = `2px solid ${color}`;
-        content.style.padding = '20px';
-        content.style.boxShadow = `0 0 12px ${color}22`;
-        titleEl.style.fontSize = '1.1rem';
+        content.style.border = 'none';
+        content.style.borderLeft = 'none';
+        content.style.borderRadius = '0 8px 8px 0';
+        content.style.padding = '16px';
+        content.style.boxShadow = 'none';
+        titleEl.style.fontSize = '1rem';
         titleEl.style.fontWeight = '700';
         titleEl.style.color = '#f2f3f5';
         descEl.style.color = '#dbdee1';
@@ -1095,10 +1099,12 @@ function updatePanelPreview() {
             else { imgEl.style.display = 'none'; }
         }
     } else {
-        // Plain embed — classic Discord embed with color bar on the left
+        // Classic embed — color bar on the left, standard embed look
         cb.style.display = 'block';
         cb.style.background = color;
+        cb.style.width = '4px';
         cb.style.borderRadius = '3px 0 0 3px';
+        cb.style.flexShrink = '0';
         embedWrap.style.display = 'flex';
         content.style.background = '#2b2d31';
         content.style.border = '1px solid #1e1f22';
@@ -1134,6 +1140,22 @@ function updatePanelPreview() {
             html += `<div style="display:flex; gap:4px; margin-top:4px;">${row.options.map(opt => `<div style="background:#4e5058; color:white; padding:4px 12px; border-radius:3px; font-size:0.8rem; cursor:default;">${opt.label}</div>`).join('')}</div>`;
         });
         menusContainer.innerHTML = html;
+    }
+
+    // V2: menus go INSIDE the container card. Classic: menus stay outside
+    const discordPreview = document.getElementById('discordPreview');
+    if (useEmbed) {
+        // Move menus inside contentBlock (after image)
+        content.appendChild(menusContainer);
+        menusContainer.style.marginTop = '12px';
+        menusContainer.style.borderTop = '1px solid #3f4147';
+        menusContainer.style.paddingTop = '12px';
+    } else {
+        // Move menus back outside (after the embed wrapper)
+        discordPreview.appendChild(menusContainer);
+        menusContainer.style.marginTop = '10px';
+        menusContainer.style.borderTop = 'none';
+        menusContainer.style.paddingTop = '0';
     }
 }
 
