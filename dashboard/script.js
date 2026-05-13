@@ -1091,6 +1091,18 @@ function updatePanelPreview() {
     titleEl.innerHTML = formatDiscordText(fullTitle);
     document.getElementById('previewDesc').innerHTML = formatDiscordText(fullDesc);
 
+    // Image preview
+    const imageUrl = getVal('panelImageUrl');
+    const imgEl = document.getElementById('previewImage');
+    if (imgEl) {
+        if (imageUrl) {
+            imgEl.src = imageUrl;
+            imgEl.style.display = 'block';
+        } else {
+            imgEl.style.display = 'none';
+        }
+    }
+
     // Update select menu previews
     const menusContainer = document.getElementById('previewMenus');
     if (panelDraft.dropdowns.length === 0 && panelDraft.buttonRows.length === 0) {
@@ -1171,7 +1183,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const ids = [
         'welcomeTitle', 'welcomeMessage', 'welcomeColor', 'welcomeImage', 'welcomeUseEmbed',
         'levelUpTitle', 'levelUpMessage', 'levelUpColor', 'levelUpUseEmbed',
-        'swearJarTitle', 'swearJarMessage', 'swearJarColor'
+        'swearJarTitle', 'swearJarMessage', 'swearJarColor',
+        'panelTitle', 'panelEmoji', 'panelDescription', 'panelDescEmoji', 'panelColor', 'panelImageUrl', 'panelUseEmbed'
     ];
     ids.forEach(id => {
         const el = document.getElementById(id);
@@ -1181,6 +1194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (id.startsWith('welcome')) updateWelcomePreview();
             if (id.startsWith('level')) updateLevelingPreview();
             if (id.startsWith('swear')) updateSwearJarPreview();
+            if (id.startsWith('panel')) updatePanelPreview();
         });
     });
 });
