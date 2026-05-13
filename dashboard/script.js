@@ -1088,17 +1088,57 @@ function updatePanelPreview() {
         content.style.borderRadius = '0 8px 8px 0';
         content.style.padding = '16px';
         content.style.boxShadow = 'none';
-        titleEl.style.fontSize = '1rem';
-        titleEl.style.fontWeight = '700';
-        titleEl.style.color = '#f2f3f5';
-        descEl.style.color = '#dbdee1';
-        titleEl.style.display = '';
-        descEl.style.display = '';
-        if (imgEl) {
-            if (imageUrl) { imgEl.src = imageUrl; imgEl.style.display = 'block'; }
-            else { imgEl.style.display = 'none'; }
+
+        // Dynamic V2 Rendering
+        if (panelDraft.v2Components && panelDraft.v2Components.length > 0) {
+            titleEl.style.display = 'none'; // Hide classic title/desc
+            descEl.style.display = 'none';
+            if (imgEl) imgEl.style.display = 'none';
+
+            let v2Html = '';
+            panelDraft.v2Components.forEach(comp => {
+                if (comp.type === 'text') {
+                    v2Html += `<div style="color:#dbdee1; font-size:0.85rem; line-height:1.5; margin-bottom:8px;">${formatDiscordText(comp.content || 'Text content...')}</div>`;
+                } else if (comp.type === 'separator') {
+                    const margin = comp.size === 'large' ? '16px' : '8px';
+                    const border = comp.dividerLine ? '1px solid #3f4147' : 'none';
+                    v2Html += `<div style="margin:${margin} 0; border-top:${border}; height:0;"></div>`;
+                } else if (comp.type === 'section') {
+                    v2Html += `<div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:12px;">
+                        <div style="flex:1; color:#dbdee1; font-size:0.85rem; line-height:1.5;">${formatDiscordText(comp.content || 'Section content...')}</div>`;
+                    if (comp.accessory && comp.accessory.type === 'thumbnail' && comp.accessory.url) {
+                        v2Html += `<img src="${comp.accessory.url}" style="width:48px; height:48px; border-radius:4px; object-fit:cover;">`;
+                    }
+                    v2Html += `</div>`;
+                } else if (comp.type === 'mediaGallery') {
+                    v2Html += `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:8px; margin-bottom:12px;">
+                        ${(comp.items || []).filter(i => i.url).map(img => `<img src="${img.url}" style="width:100%; border-radius:4px;">`).join('')}
+                    </div>`;
+                }
+            });
+            
+            // Check if there's already a v2 container, if not create one or use a placeholder
+            let v2Wrap = content.querySelector('.v2-dynamic-content');
+            if (!v2Wrap) {
+                v2Wrap = document.createElement('div');
+                v2Wrap.className = 'v2-dynamic-content';
+                content.insertBefore(v2Wrap, titleEl);
+            }
+            v2Wrap.innerHTML = v2Html;
+        } else {
+            // Default V2 look if no components added
+            titleEl.style.display = '';
+            descEl.style.display = '';
+            titleEl.innerHTML = formatDiscordText(fullTitle);
+            descEl.innerHTML = formatDiscordText(fullDesc);
+            const v2Wrap = content.querySelector('.v2-dynamic-content');
+            if (v2Wrap) v2Wrap.innerHTML = '';
         }
     } else {
+        // Remove V2 dynamic content if it exists
+        const v2Wrap = content.querySelector('.v2-dynamic-content');
+        if (v2Wrap) v2Wrap.remove();
+
         // Classic embed — color bar on the left, standard embed look
         cb.style.display = 'block';
         cb.style.background = color;
@@ -1118,14 +1158,15 @@ function updatePanelPreview() {
         descEl.style.color = '#dbdee1';
         titleEl.style.display = '';
         descEl.style.display = '';
+        
+        titleEl.innerHTML = formatDiscordText(fullTitle);
+        descEl.innerHTML = formatDiscordText(fullDesc);
+
         if (imgEl) {
             if (imageUrl) { imgEl.src = imageUrl; imgEl.style.display = 'block'; }
             else { imgEl.style.display = 'none'; }
         }
     }
-
-    titleEl.innerHTML = formatDiscordText(fullTitle);
-    descEl.innerHTML = formatDiscordText(fullDesc);
 
     // Update select menu previews
     const menusContainer = document.getElementById('previewMenus');
@@ -1242,7 +1283,162 @@ document.addEventListener('DOMContentLoaded', () => {
 // =============================================
 // TICKET PANELS & TRANSCRIPTS
 // =============================================
-let panelDraft = { dropdowns: [], buttonRows: [] };
+let panelDraft = { dropdowns: [], buttonRows: [], v2Components: [] };
+
+function toggleV2Mode() {
+    const isV2 = getCheck('panelUseEmbed');
+    const v2Editor = document.getElementById('v2EditorContainer');
+    const classicFields = document.getElementById('classicPanelFields');
+    
+    if (isV2) {
+        v2Editor.style.display = 'block';
+        classicFields.style.display = 'none';
+    } else {
+        v2Editor.style.display = 'none';
+        classicFields.style.display = 'block';
+    }
+    updatePanelPreview();
+}
+
+function toggleAddMenu() {
+    const menu = document.getElementById('addComponentMenu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown')) {
+        const menu = document.getElementById('addComponentMenu');
+        if (menu) menu.style.display = 'none';
+    }
+});
+
+function addV2Component(type) {
+    let component = { id: Date.now().toString(), type: type };
+    
+    if (type === 'text') {
+        component.content = '';
+    } else if (type === 'section') {
+        component.content = '';
+        component.accessory = { type: 'none' };
+    } else if (type === 'separator') {
+        component.size = 'small';
+        component.dividerLine = true;
+    } else if (type === 'mediaGallery') {
+        component.items = [];
+    } else if (type === 'actionRow') {
+        component.components = [];
+    }
+    
+    panelDraft.v2Components.push(component);
+    document.getElementById('addComponentMenu').style.display = 'none';
+    renderV2Editor();
+    updatePanelPreview();
+}
+
+function removeV2Component(index) {
+    panelDraft.v2Components.splice(index, 1);
+    renderV2Editor();
+    updatePanelPreview();
+}
+
+function updateV2Field(index, field, value) {
+    panelDraft.v2Components[index][field] = value;
+    updatePanelPreview();
+    markDirty();
+}
+
+function renderV2Editor() {
+    const container = document.getElementById('v2ComponentsList');
+    if (!container) return;
+    
+    if (panelDraft.v2Components.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:40px 20px; border:2px dashed var(--border-medium); border-radius:8px; color:var(--text-muted);">
+            <i class="fas fa-layer-group" style="font-size:2rem; margin-bottom:12px; opacity:0.5;"></i>
+            <p>No components added yet. Use the button below to build your container.</p>
+        </div>`;
+        return;
+    }
+    
+    container.innerHTML = panelDraft.v2Components.map((comp, idx) => {
+        let html = `<div class="z-card" style="background:#1e1f22; border-color:#3f4147; padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#949ba4;">
+                    <i class="${getIconForType(comp.type)}"></i> ${comp.type}
+                </span>
+                <button class="z-btn-icon" style="color:#ed4245;" onclick="removeV2Component(${idx})"><i class="fas fa-trash"></i></button>
+            </div>`;
+            
+        if (comp.type === 'text') {
+            html += `<textarea class="z-input" placeholder="Enter text content..." oninput="updateV2Field(${idx}, 'content', this.value)">${comp.content || ''}</textarea>`;
+        } else if (comp.type === 'separator') {
+            html += `<div style="display:flex; gap:12px; align-items:center;">
+                <select class="z-input" style="flex:1;" onchange="updateV2Field(${idx}, 'size', this.value)">
+                    <option value="small" ${comp.size === 'small' ? 'selected' : ''}>Small Space</option>
+                    <option value="large" ${comp.size === 'large' ? 'selected' : ''}>Large Space</option>
+                </select>
+                <label style="display:flex; gap:8px; align-items:center; cursor:pointer; font-size:0.85rem; color:var(--text-muted);">
+                    <input type="checkbox" ${comp.dividerLine ? 'checked' : ''} onchange="updateV2Field(${idx}, 'dividerLine', this.checked)"> Divider Line
+                </label>
+            </div>`;
+        } else if (comp.type === 'section') {
+            html += `<textarea class="z-input" placeholder="Main content..." oninput="updateV2Field(${idx}, 'content', this.value)">${comp.content || ''}</textarea>
+                <div class="z-input-group" style="margin-top:12px;">
+                    <label style="font-size:0.75rem;">Accessory Type</label>
+                    <select class="z-input" onchange="updateV2Field(${idx}, 'accessory', {type: this.value, url: ''})">
+                        <option value="none" ${comp.accessory.type === 'none' ? 'selected' : ''}>None</option>
+                        <option value="thumbnail" ${comp.accessory.type === 'thumbnail' ? 'selected' : ''}>Thumbnail (Right)</option>
+                    </select>
+                </div>`;
+            if (comp.accessory.type === 'thumbnail') {
+                html += `<div class="z-input-group" style="margin-top:8px;">
+                    <input class="z-input" type="text" placeholder="Image URL..." value="${comp.accessory.url || ''}" oninput="updateV2Field(${idx}, 'accessory', {type:'thumbnail', url:this.value})">
+                </div>`;
+            }
+        } else if (comp.type === 'mediaGallery') {
+            html += `<p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">Image Gallery (Discord Component)</p>
+                <div id="gallery_${idx}_items" style="display:flex; flex-direction:column; gap:8px;">
+                    ${(comp.items || []).map((img, iIdx) => `
+                        <div style="display:flex; gap:8px;">
+                            <input class="z-input" type="text" placeholder="Image URL..." value="${img.url || ''}" oninput="updateGalleryItem(${idx}, ${iIdx}, this.value)">
+                            <button class="z-btn-icon" style="color:#ed4245;" onclick="removeGalleryItem(${idx}, ${iIdx})"><i class="fas fa-times"></i></button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="z-btn z-btn-secondary" style="width:100%; margin-top:8px; font-size:0.8rem; padding:6px;" onclick="addGalleryItem(${idx})">
+                    <i class="fas fa-plus"></i> Add Image
+                </button>`;
+        } else if (comp.type === 'actionRow') {
+            html += `<p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">Buttons/Selects are managed in the Routing Modules section below for now.</p>`;
+        }
+            
+        html += `</div>`;
+        return html;
+    }).join('');
+}
+
+function getIconForType(type) {
+    const icons = { text: 'fas fa-align-left', section: 'fas fa-th-large', separator: 'fas fa-minus', mediaGallery: 'fas fa-images', actionRow: 'fas fa-bars' };
+    return icons[type] || 'fas fa-cube';
+}
+
+function addGalleryItem(idx) {
+    if (!panelDraft.v2Components[idx].items) panelDraft.v2Components[idx].items = [];
+    panelDraft.v2Components[idx].items.push({ url: '' });
+    renderV2Editor();
+    updatePanelPreview();
+}
+
+function updateGalleryItem(idx, iIdx, url) {
+    panelDraft.v2Components[idx].items[iIdx].url = url;
+    updatePanelPreview();
+}
+
+function removeGalleryItem(idx, iIdx) {
+    panelDraft.v2Components[idx].items.splice(iIdx, 1);
+    renderV2Editor();
+    updatePanelPreview();
+}
 
 function addDropdown() {
     panelDraft.dropdowns.push({ id: Date.now().toString(), placeholder: 'Select an option...', options: [] });
@@ -1624,7 +1820,8 @@ async function savePanel() {
                     imageUrl: getVal('panelImageUrl'),
                     useEmbed: document.getElementById('panelUseEmbed').checked ? 1 : 0,
                     dropdowns: panelDraft.dropdowns,
-                    buttonRows: panelDraft.buttonRows
+                    buttonRows: panelDraft.buttonRows,
+                    v2Components: panelDraft.v2Components || []
                 }
             })
         });
@@ -1984,8 +2181,11 @@ async function editPanel(id) {
         
         panelDraft.dropdowns = data.dropdowns || [];
         panelDraft.buttonRows = data.buttonRows || [];
+        panelDraft.v2Components = data.v2Components || [];
         
         renderDropdowns();
+        renderV2Editor();
+        toggleV2Mode();
         showToast('Panel data loaded for reconfiguration.', false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {

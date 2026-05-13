@@ -35,37 +35,60 @@ function buildV2Message(opts) {
         container.setAccentColor(colorInt);
     }
 
-    // Title
-    if (opts.title) {
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`### ${opts.title}`)
-        );
-    }
-
-    // Description
-    if (opts.description) {
-        container.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(opts.description)
-        );
-    }
-
-    // Fields (like embed fields)
-    if (opts.fields && opts.fields.length > 0) {
-        container.addSeparatorComponents(new SeparatorBuilder());
-        opts.fields.forEach(field => {
-            container.addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`**${field.name}**\n${field.value}`)
-            );
+    // If we have dynamic components, use them
+    if (opts.v2Components && opts.v2Components.length > 0) {
+        opts.v2Components.forEach(comp => {
+            if (comp.type === 'text') {
+                container.addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent(comp.content || '_ _')
+                );
+            } else if (comp.type === 'separator') {
+                container.addSeparatorComponents(
+                    new SeparatorBuilder()
+                        .setSize(comp.size === 'large' ? 'Large' : 'Small')
+                        .setDivider(!!comp.dividerLine)
+                );
+            } else if (comp.type === 'section') {
+                const section = new SectionBuilder().setText(
+                    new TextDisplayBuilder().setContent(comp.content || '_ _')
+                );
+                if (comp.accessory && comp.accessory.type === 'thumbnail' && comp.accessory.url) {
+                    section.setAccessory(
+                        new MediaGalleryBuilder().addItems(
+                            new MediaGalleryItemBuilder().setURL(comp.accessory.url)
+                        )
+                    );
+                }
+                container.addSectionComponents(section);
+            } else if (comp.type === 'mediaGallery') {
+                if (comp.items && comp.items.length > 0) {
+                    const gallery = new MediaGalleryBuilder();
+                    comp.items.forEach(item => {
+                        if (item.url) gallery.addItems(new MediaGalleryItemBuilder().setURL(item.url));
+                    });
+                    container.addMediaGalleryComponents(gallery);
+                }
+            }
         });
-    }
-
-    // Image via MediaGallery
-    if (opts.imageUrl) {
-        container.addMediaGalleryComponents(
-            new MediaGalleryBuilder().addItems(
-                new MediaGalleryItemBuilder().setURL(opts.imageUrl)
-            )
-        );
+    } else {
+        // Fallback to classic title/desc for simple V2
+        if (opts.title) {
+            container.addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(`### ${opts.title}`)
+            );
+        }
+        if (opts.description) {
+            container.addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(opts.description)
+            );
+        }
+        if (opts.imageUrl) {
+            container.addMediaGalleryComponents(
+                new MediaGalleryBuilder().addItems(
+                    new MediaGalleryItemBuilder().setURL(opts.imageUrl)
+                )
+            );
+        }
     }
 
     // Footer
@@ -76,20 +99,17 @@ function buildV2Message(opts) {
         );
     }
 
-    const payload = {
-        components: [container],
-        flags: MessageFlags.IsComponentsV2
-    };
-
-    // Action rows go as top-level components alongside the container
+    // Action rows go inside the container in V2
     if (opts.actionRows && opts.actionRows.length > 0) {
-        // In V2 mode, action rows must be inside the container
         opts.actionRows.forEach(row => {
             container.addActionRowComponents(row);
         });
     }
 
-    return payload;
+    return {
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+    };
 }
 
 /**

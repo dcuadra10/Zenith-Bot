@@ -461,53 +461,83 @@
                                     <label>Deployment Channel</label>
                                     <select class="z-input" id="panelChannelId"></select>
                                 </div>
-                                <div class="z-input-group">
-                                    <label>Panel Header</label>
-                                    <input class="z-input" type="text" id="panelTitle" placeholder="Command Support" oninput="updatePanelPreview()">
-                                </div>
-                                <div class="z-input-group">
-                                    <label>Header Emoji</label>
-                                    <input class="z-input" type="text" id="panelEmoji" placeholder="e.g. 🛠️" oninput="updatePanelPreview()">
-                                </div>
+                            <div class="toggle-row" style="margin-top:12px; border-top:1px solid var(--border-medium); padding-top:16px;">
+                                <div class="toggle-info"><h4>Components V2 (Container)</h4><p>ON = Container layout (rounded card, buttons inside). OFF = Classic embed with side color bar.</p></div>
+                                <label class="toggle-switch"><input type="checkbox" id="panelUseEmbed" onchange="toggleV2Mode()" checked><span class="toggle-slider"></span></label>
                             </div>
-                            <div class="input-row">
-                                <div class="z-input-group">
-                                    <label>Directives</label>
-                                    <textarea class="z-input" id="panelDescription" placeholder="Select your inquiry path..." oninput="updatePanelPreview()"></textarea>
+
+                            <!-- V2 Modular Editor (Hidden by default) -->
+                            <div id="v2EditorContainer" style="display:none; margin-top:24px;">
+                                <div class="z-card-header" style="margin-bottom:16px;">
+                                    <h3>Container Components</h3>
+                                    <p style="font-size:0.8rem; color:var(--text-muted);">Add and arrange text, sections, and separators inside your container.</p>
                                 </div>
-                                <div class="z-input-group">
-                                    <label>Directive Emoji</label>
-                                    <input class="z-input" type="text" id="panelDescEmoji" placeholder="e.g. 📑" oninput="updatePanelPreview()">
+                                
+                                <div id="v2ComponentsList" style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
+                                    <!-- Components will be rendered here -->
                                 </div>
-                            </div>
-                            <div class="z-input-group">
-                                <label>Glow Color</label>
-                                <div class="color-picker-wrap">
-                                    <input type="color" id="panelColor" value="#FFD700" oninput="updatePanelPreview();document.getElementById('panelColorHex').textContent=this.value;">
-                                    <span style="color:var(--text-muted); font-size:0.9rem;" id="panelColorHex">#FFD700</span>
+
+                                <div style="position:relative;">
+                                    <button class="z-btn z-btn-secondary" style="width:100%; justify-content:center;" onclick="toggleAddMenu()">
+                                        <i class="fas fa-plus"></i> Add Component
+                                    </button>
+                                    <div id="addComponentMenu" class="z-dropdown-content" style="display:none; position:absolute; bottom:100%; left:0; width:100%; background:#2b2d31; border:1px solid #1e1f22; border-radius:8px; overflow:hidden; z-index:100; margin-bottom:8px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+                                        <div class="z-dropdown-item" onclick="addV2Component('text')"><i class="fas fa-align-left"></i> Text Display</div>
+                                        <div class="z-dropdown-item" onclick="addV2Component('section')"><i class="fas fa-th-large"></i> Section (Text + Accessory)</div>
+                                        <div class="z-dropdown-item" onclick="addV2Component('separator')"><i class="fas fa-minus"></i> Separator</div>
+                                        <div class="z-dropdown-item" onclick="addV2Component('mediaGallery')"><i class="fas fa-images"></i> Media Gallery</div>
+                                        <div class="z-dropdown-item" onclick="addV2Component('actionRow')"><i class="fas fa-bars"></i> Action Row (Buttons/Selects)</div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div style="margin-top:24px; border-top:1px solid var(--border-medium); padding-top:24px;">
-                                <div class="z-card-header" style="margin-bottom:12px;">
-                                    <h3>Routing Modules</h3>
+                            <!-- Classic Panel Fields -->
+                            <div id="classicPanelFields">
+                                <div class="input-row" style="margin-top:24px;">
+                                    <div class="z-input-group">
+                                        <label>Panel Header</label>
+                                        <input class="z-input" type="text" id="panelTitle" placeholder="Command Support" oninput="updatePanelPreview()">
+                                    </div>
+                                    <div class="z-input-group">
+                                        <label>Header Emoji</label>
+                                        <input class="z-input" type="text" id="panelEmoji" placeholder="e.g. 🛠️" oninput="updatePanelPreview()">
+                                    </div>
                                 </div>
-                                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:16px;">Create dropdowns or button arrays (Limit: 5 rows).</p>
-                                <div id="dropdownsContainer" style="margin-bottom:16px;"></div>
-                                <div style="display:flex; gap:12px; margin-top:16px;">
-                                    <button class="z-btn z-btn-secondary" style="flex:1;" onclick="addButtonRow()"><i class="fas fa-plus"></i> Button Matrix</button>
-                                    <button class="z-btn z-btn-secondary" style="flex:1;" onclick="addDropdown()"><i class="fas fa-plus"></i> Selection Menu</button>
+                                <div class="input-row">
+                                    <div class="z-input-group">
+                                        <label>Directives</label>
+                                        <textarea class="z-input" id="panelDescription" placeholder="Select your inquiry path..." oninput="updatePanelPreview()"></textarea>
+                                    </div>
+                                    <div class="z-input-group">
+                                        <label>Directive Emoji</label>
+                                        <input class="z-input" type="text" id="panelDescEmoji" placeholder="e.g. 📑" oninput="updatePanelPreview()">
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div style="margin-top:24px; border-top:1px solid var(--border-medium); padding-top:24px;">
                                 <div class="z-input-group">
-                                    <label>Panel Image URL (Optional)</label>
-                                    <input class="z-input" type="text" id="panelImageUrl" placeholder="https://example.com/panel-banner.png">
+                                    <label>Glow Color</label>
+                                    <div class="color-picker-wrap">
+                                        <input type="color" id="panelColor" value="#FFD700" oninput="updatePanelPreview();document.getElementById('panelColorHex').textContent=this.value;">
+                                        <span style="color:var(--text-muted); font-size:0.9rem;" id="panelColorHex">#FFD700</span>
+                                    </div>
                                 </div>
-                                <div class="toggle-row" style="margin-top:4px;">
-                                    <div class="toggle-info"><h4>Components V2 (Container)</h4><p>ON = Container layout (rounded card, buttons inside). OFF = Classic embed with side color bar.</p></div>
-                                    <label class="toggle-switch"><input type="checkbox" id="panelUseEmbed" onchange="updatePanelPreview()" checked><span class="toggle-slider"></span></label>
+
+                                <div style="margin-top:24px; border-top:1px solid var(--border-medium); padding-top:24px;">
+                                    <div class="z-card-header" style="margin-bottom:12px;">
+                                        <h3>Routing Modules</h3>
+                                    </div>
+                                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:16px;">Create dropdowns or button arrays (Limit: 5 rows).</p>
+                                    <div id="dropdownsContainer" style="margin-bottom:16px;"></div>
+                                    <div style="display:flex; gap:12px; margin-top:16px;">
+                                        <button class="z-btn z-btn-secondary" style="flex:1;" onclick="addButtonRow()"><i class="fas fa-plus"></i> Button Matrix</button>
+                                        <button class="z-btn z-btn-secondary" style="flex:1;" onclick="addDropdown()"><i class="fas fa-plus"></i> Selection Menu</button>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top:24px; border-top:1px solid var(--border-medium); padding-top:24px;">
+                                    <div class="z-input-group">
+                                        <label>Panel Image URL (Optional)</label>
+                                        <input class="z-input" type="text" id="panelImageUrl" placeholder="https://example.com/panel-banner.png">
+                                    </div>
                                 </div>
                             </div>
 

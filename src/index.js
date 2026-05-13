@@ -415,6 +415,7 @@ app.post('/api/panels/:guildId', async (req, res) => {
             description: panelDesc,
             color: panelData.color || '#a855f7',
             imageUrl: panelData.imageUrl || null,
+            v2Components: panelData.v2Components || [],
             actionRows: rows
         });
 
