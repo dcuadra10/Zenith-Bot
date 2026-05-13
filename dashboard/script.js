@@ -7,6 +7,106 @@ let activeGuild = null;
 let editingPanelId = null;
 let editingMessageId = null;
 
+// ===== AUTO-DRAFT SYSTEM =====
+const DRAFT_KEY = 'zenith_dashboard_draft';
+let _draftSaveTimer = null;
+let _draftDirty = false;
+
+function getDraftKey() {
+    return activeGuild ? `${DRAFT_KEY}_${activeGuild.id}` : null;
+}
+
+function saveDraft() {
+    const key = getDraftKey();
+    if (!key) return;
+    try {
+        const draft = {
+            guildId: activeGuild.id,
+            guild: activeGuild,
+            activePage: document.querySelector('.sidebar-link.active')?.dataset?.page || 'overview',
+            panelDraft: typeof panelDraft !== 'undefined' ? panelDraft : null,
+            fields: {},
+            timestamp: Date.now()
+        };
+        document.querySelectorAll('.z-input, input[type=checkbox], input[type=color]').forEach(el => {
+            if (!el.id) return;
+            if (el.type === 'checkbox') {
+                draft.fields[el.id] = { type: 'check', value: el.checked };
+            } else if (el.type === 'color') {
+                draft.fields[el.id] = { type: 'color', value: el.value };
+            } else if (el.tagName === 'SELECT') {
+                if (tomSelects[el.id]) {
+                    draft.fields[el.id] = { type: 'select', value: tomSelects[el.id].getValue() };
+                } else {
+                    draft.fields[el.id] = { type: 'select', value: el.value };
+                }
+            } else {
+                draft.fields[el.id] = { type: 'input', value: el.value };
+            }
+        });
+        localStorage.setItem(key, JSON.stringify(draft));
+        _draftDirty = false;
+    } catch (e) { /* quota exceeded or serialization error */ }
+}
+
+function restoreDraft(guildId) {
+    const key = `${DRAFT_KEY}_${guildId}`;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const draft = JSON.parse(raw);
+        if (Date.now() - draft.timestamp > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem(key);
+            return null;
+        }
+        return draft;
+    } catch (e) { return null; }
+}
+
+function applyDraft(draft) {
+    if (!draft || !draft.fields) return;
+    if (draft.panelDraft) {
+        try { panelDraft = draft.panelDraft; } catch(e) {}
+    }
+    Object.entries(draft.fields).forEach(([id, data]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        try {
+            if (data.type === 'check') {
+                el.checked = data.value;
+            } else if (data.type === 'select' && tomSelects[id]) {
+                tomSelects[id].setValue(data.value);
+            } else {
+                el.value = data.value;
+            }
+        } catch (e) {}
+    });
+    if (draft.activePage) {
+        const link = document.querySelector(`.sidebar-link[data-page="${draft.activePage}"]`);
+        if (link) link.click();
+    }
+    showToast('\u{1f4dd} Draft restored from your last session');
+}
+
+function clearDraft() {
+    const key = getDraftKey();
+    if (key) localStorage.removeItem(key);
+}
+
+function markDirty() { _draftDirty = true; }
+
+function startAutoSave() {
+    if (_draftSaveTimer) clearInterval(_draftSaveTimer);
+    document.addEventListener('input', markDirty, true);
+    document.addEventListener('change', markDirty, true);
+    _draftSaveTimer = setInterval(() => {
+        if (_draftDirty) saveDraft();
+    }, 5000);
+    window.addEventListener('beforeunload', () => {
+        if (_draftDirty || activeGuild) saveDraft();
+    });
+}
+
 // ===== UTILITIES =====
 function getCookie(name) {
     const v = `; ${document.cookie}`;
@@ -68,8 +168,21 @@ window.addEventListener('DOMContentLoaded', () => {
         showScreen('guildScreen');
         fetchGuilds();
     } else if (localStorage.getItem('discord_token') || getCookie('discord_token')) {
-        showScreen('guildScreen');
-        fetchGuilds();
+        // Check if user had a guild session open
+        const lastGuild = localStorage.getItem('zenith_last_guild');
+        if (lastGuild) {
+            try {
+                const guild = JSON.parse(lastGuild);
+                showScreen('guildScreen');
+                fetchGuilds().then(() => selectGuild(guild));
+            } catch(e) {
+                showScreen('guildScreen');
+                fetchGuilds();
+            }
+        } else {
+            showScreen('guildScreen');
+            fetchGuilds();
+        }
     }
 
     // Sidebar navigation
@@ -86,6 +199,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (page === 'transcripts') {
                 fetchTranscripts();
             }
+            markDirty(); // track page change for draft
         });
     });
 
@@ -159,10 +273,17 @@ function selectGuild(guild) {
     document.getElementById('topbarUsername').textContent = guild.owner ? 'Owner' : 'Admin';
 
     showScreen('dashboardScreen');
-    loadDashboardData();
+    localStorage.setItem('zenith_last_guild', JSON.stringify(guild));
+    loadDashboardData().then(() => {
+        const draft = restoreDraft(guild.id);
+        if (draft) setTimeout(() => applyDraft(draft), 500);
+    });
+    startAutoSave();
 }
 
 function goBackToGuilds() {
+    saveDraft(); // save before leaving
+    localStorage.removeItem('zenith_last_guild');
     activeGuild = null;
     showScreen('guildScreen');
     // Reset to overview
@@ -787,6 +908,7 @@ async function saveModuleConfig(moduleName) {
             })
         });
 
+        clearDraft(); // Clear draft on successful save
         const btn = event.target.closest('button');
         if (btn) {
             const oldText = btn.innerHTML;
