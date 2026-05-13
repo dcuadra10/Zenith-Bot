@@ -726,6 +726,10 @@ textarea.z-input { resize: vertical; min-height: 100px; line-height: 1.6; }
     display: flex !important;
     animation: fadeIn 0.3s var(--transition);
 }
+#optionSettingsModal > .z-card {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
 
 /* ===== DISCORD CHAT VIEWER ===== */
 .discord-chat-viewer {
