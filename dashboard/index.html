@@ -456,14 +456,20 @@
                                 <h3>Panel Architect</h3>
                                 <span style="background:var(--gold-800); color:#fff; font-size:0.7rem; padding:4px 8px; border-radius:4px; font-weight:700;">NEW</span>
                             </div>
+
+                            <div class="toggle-row" style="margin:16px 0; background:rgba(255,215,0,0.05); padding:12px; border-radius:8px; border:1px solid rgba(255,215,0,0.1);">
+                                <div class="toggle-info">
+                                    <h4 style="color:var(--gold-text); margin-bottom:2px;">Components V2 (Container)</h4>
+                                    <p style="font-size:0.75rem; color:var(--text-muted);">ON = Modular Container (Discohook style). OFF = Classic Discord Embed.</p>
+                                </div>
+                                <label class="toggle-switch"><input type="checkbox" id="panelUseEmbed" onchange="toggleV2Mode()"><span class="toggle-slider"></span></label>
+                            </div>
+
                             <div class="input-grid">
                                 <div class="z-input-group">
                                     <label>Deployment Channel</label>
                                     <select class="z-input" id="panelChannelId"></select>
                                 </div>
-                            <div class="toggle-row" style="margin-top:12px; border-top:1px solid var(--border-medium); padding-top:16px;">
-                                <div class="toggle-info"><h4>Components V2 (Container)</h4><p>ON = Container layout (rounded card, buttons inside). OFF = Classic embed with side color bar.</p></div>
-                                <label class="toggle-switch"><input type="checkbox" id="panelUseEmbed" onchange="toggleV2Mode()" checked><span class="toggle-slider"></span></label>
                             </div>
 
                             <!-- V2 Modular Editor (Hidden by default) -->
