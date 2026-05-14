@@ -478,6 +478,22 @@
                                     <h3 style="font-size:1.1rem;"><i class="fas fa-cubes" style="color:var(--gold-text); margin-right:8px;"></i> Container Components</h3>
                                     <p style="font-size:0.8rem; color:var(--text-muted);">Build your message structure piece by piece.</p>
                                 </div>
+
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px; background:rgba(0,0,0,0.1); padding:12px; border-radius:8px; border:1px solid var(--border-medium);">
+                                    <div class="z-input-group">
+                                        <label style="font-size:0.75rem;">Sidebar Color</label>
+                                        <div class="color-picker-wrap">
+                                            <input type="color" id="v2SidebarColor" value="#a855f7" oninput="updatePanelPreview();document.getElementById('v2ColorHex').textContent=this.value;">
+                                            <span style="color:var(--text-muted); font-size:0.8rem;" id="v2ColorHex">#a855f7</span>
+                                        </div>
+                                    </div>
+                                    <div class="z-input-group" style="display:flex; flex-direction:column; justify-content:center;">
+                                        <label style="font-size:0.75rem;">Privacy</label>
+                                        <label style="display:flex; gap:8px; align-items:center; cursor:pointer; font-size:0.85rem; color:var(--text-muted); margin-top:4px;">
+                                            <input type="checkbox" id="v2IsSpoiler" onchange="updatePanelPreview()"> Mark as Spoiler
+                                        </label>
+                                    </div>
+                                </div>
                                 
                                 <div id="v2ComponentsList" style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
                                     <!-- Components will be rendered here -->

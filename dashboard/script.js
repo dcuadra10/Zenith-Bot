@@ -1059,9 +1059,9 @@ function updatePanelPreview() {
     const emojiVal = getVal('panelEmoji') || '';
     const descVal = getVal('panelDescription') || 'Please select a category below to open a ticket...';
     const descEmojiVal = getVal('panelDescEmoji') || '';
-    const color = getVal('panelColor') || '#a855f7';
-
     const useEmbed = getCheck('panelUseEmbed');
+    const color = useEmbed ? (getVal('v2SidebarColor') || '#a855f7') : (getVal('panelColor') || '#ffd700');
+    const isSpoiler = useEmbed && getCheck('v2IsSpoiler');
 
     const fullTitle = (emojiVal ? emojiVal + ' ' : '') + titleVal;
     const fullDesc = (descEmojiVal ? descEmojiVal + ' ' : '') + descVal;
@@ -1078,6 +1078,16 @@ function updatePanelPreview() {
         // Components V2 / Container — rounded card with thin sidebar color, everything inside
         cb.style.display = 'block';
         cb.style.background = color;
+        
+        // Handle Spoiler Preview
+        if (isSpoiler) {
+            content.style.filter = 'blur(10px) grayscale(1)';
+            content.style.cursor = 'help';
+        } else {
+            content.style.filter = 'none';
+            content.style.cursor = 'default';
+        }
+
         cb.style.width = '4px';
         cb.style.borderRadius = '8px 0 0 8px';
         cb.style.flexShrink = '0';
@@ -1265,7 +1275,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'welcomeTitle', 'welcomeMessage', 'welcomeColor', 'welcomeImage', 'welcomeUseEmbed',
         'levelUpTitle', 'levelUpMessage', 'levelUpColor', 'levelUpUseEmbed',
         'swearJarTitle', 'swearJarMessage', 'swearJarColor',
-        'panelTitle', 'panelEmoji', 'panelDescription', 'panelDescEmoji', 'panelColor', 'panelImageUrl', 'panelUseEmbed'
+        'panelTitle', 'panelEmoji', 'panelDescription', 'panelDescEmoji', 'panelColor', 'panelImageUrl', 'panelUseEmbed',
+        'v2SidebarColor', 'v2IsSpoiler'
     ];
     ids.forEach(id => {
         const el = document.getElementById(id);
@@ -1820,6 +1831,8 @@ async function savePanel() {
                     description: getVal('panelDescription') || 'Open a ticket...',
                     descEmoji: getVal('panelDescEmoji'),
                     color: getVal('panelColor'),
+                    v2SidebarColor: getVal('v2SidebarColor'),
+                    v2IsSpoiler: getCheck('v2IsSpoiler'),
                     imageUrl: getVal('panelImageUrl'),
                     useEmbed: document.getElementById('panelUseEmbed').checked ? 1 : 0,
                     dropdowns: panelDraft.dropdowns,
@@ -2179,6 +2192,9 @@ async function editPanel(id) {
         setVal('panelDescEmoji', data.descEmoji || '');
         setVal('panelColor', data.color || '#ffd700');
         document.getElementById('panelColorHex').textContent = data.color || '#ffd700';
+        setVal('v2SidebarColor', data.v2SidebarColor || '#a855f7');
+        document.getElementById('v2ColorHex').textContent = data.v2SidebarColor || '#a855f7';
+        setCheck('v2IsSpoiler', !!data.v2IsSpoiler);
         setVal('panelImageUrl', data.imageUrl || '');
         setCheck('panelUseEmbed', data.useEmbed === undefined || data.useEmbed === null ? true : !!data.useEmbed);
         
