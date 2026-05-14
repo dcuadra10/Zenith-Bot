@@ -1300,16 +1300,19 @@ function toggleV2Mode() {
     updatePanelPreview();
 }
 
-function toggleAddMenu() {
+function toggleAddMenu(e) {
+    if (e) e.stopPropagation();
     const menu = document.getElementById('addComponentMenu');
     menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
 }
 
 // Close menu when clicking outside
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.dropdown')) {
-        const menu = document.getElementById('addComponentMenu');
-        if (menu) menu.style.display = 'none';
+    const menu = document.getElementById('addComponentMenu');
+    if (menu && menu.style.display === 'block') {
+        if (!menu.contains(e.target)) {
+            menu.style.display = 'none';
+        }
     }
 });
 
