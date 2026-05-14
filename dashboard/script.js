@@ -1371,6 +1371,18 @@ function removeV2Component(index) {
     updatePanelPreview();
 }
 
+function moveV2Component(index, direction) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= panelDraft.v2Components.length) return;
+    
+    const element = panelDraft.v2Components.splice(index, 1)[0];
+    panelDraft.v2Components.splice(newIndex, 0, element);
+    
+    renderV2Editor();
+    updatePanelPreview();
+    markDirty();
+}
+
 function updateV2Field(index, field, value) {
     panelDraft.v2Components[index][field] = value;
     updatePanelPreview();
@@ -1390,11 +1402,17 @@ function renderV2Editor() {
     }
     
     container.innerHTML = panelDraft.v2Components.map((comp, idx) => {
-        let html = `<div class="z-card" style="background:#1e1f22; border-color:#3f4147; padding:16px;">
+        let html = `<div class="z-card" style="background:#1e1f22; border-color:#3f4147; padding:16px; border-left: 3px solid var(--gold-800);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#949ba4;">
-                    <i class="${getIconForType(comp.type)}"></i> ${comp.type}
-                </span>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <button class="z-btn-icon" style="font-size:0.6rem; padding:2px;" onclick="moveV2Component(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.2;"' : ''}><i class="fas fa-chevron-up"></i></button>
+                        <button class="z-btn-icon" style="font-size:0.6rem; padding:2px;" onclick="moveV2Component(${idx}, 1)" ${idx === panelDraft.v2Components.length - 1 ? 'disabled style="opacity:0.2;"' : ''}><i class="fas fa-chevron-down"></i></button>
+                    </div>
+                    <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#949ba4;">
+                        <i class="${getIconForType(comp.type)}"></i> ${comp.type}
+                    </span>
+                </div>
                 <button class="z-btn-icon" style="color:#ed4245;" onclick="removeV2Component(${idx})"><i class="fas fa-trash"></i></button>
             </div>`;
             
