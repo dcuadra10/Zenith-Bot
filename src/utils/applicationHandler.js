@@ -251,19 +251,37 @@ async function submitApplication(interaction, appState) {
         if (adminChannel) {
             const adminEmbed = new EmbedBuilder()
                 .setTitle('📥 New Application for Review')
-                .setDescription(`**User:** <@${interaction.user.id}>\n**Ticket Type:** ${appState.opt.label}\n\n**Answers:**`)
+                .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
+                .setDescription(`**User:** <@${interaction.user.id}>\n**Ticket Type:** ${appState.opt.label}\n\n**Answers Summary:**`)
                 .setColor('#ffd700');
 
+            // Discord limit is 25 fields. If more, we merge them into description or multiple embeds.
+            // For now, let's merge into a clean text summary to avoid field limits.
+            let fullAnswersText = '';
             appState.answers.forEach((ans, i) => {
-                adminEmbed.addFields({ name: `${i+1}. ${ans.question}`, value: ans.answer.substring(0, 1024) });
+                const line = `**${i+1}. ${ans.question}**\n${ans.answer}\n\n`;
+                if ((fullAnswersText + line).length < 4000) {
+                    fullAnswersText += line;
+                }
             });
+            
+            adminEmbed.setDescription(adminEmbed.data.description + '\n\n' + fullAnswersText);
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`admin_app_approve_${uuid}`).setLabel('Approve').setStyle(ButtonStyle.Success),
                 new ButtonBuilder().setCustomId(`admin_app_decline_${uuid}`).setLabel('Decline').setStyle(ButtonStyle.Danger)
             );
 
-            await adminChannel.send({ embeds: [adminEmbed], components: [row] });
+            try {
+                await adminChannel.send({ embeds: [adminEmbed], components: [row] });
+            } catch (sendErr) {
+                console.error('Failed to send admin notification:', sendErr);
+                // If embed fails (e.g. too long), try sending as plain text or shorter version
+                await adminChannel.send({ 
+                    content: `⚠️ **New Application from <@${interaction.user.id}>** (Embed too large)\nUUID: \`${uuid}\``,
+                    components: [row] 
+                }).catch(e => console.error('Final fallback failed:', e));
+            }
         }
         await interaction.update({ content: '✅ Your application has been sent for admin review. You will be notified of the decision.', embeds: [], components: [] });
     } else {
