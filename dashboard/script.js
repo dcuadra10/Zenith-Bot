@@ -1124,6 +1124,21 @@ function updatePanelPreview() {
                     v2Html += `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:8px; margin-bottom:12px;">
                         ${(comp.items || []).filter(i => i.url).map(img => `<img src="${img.url}" style="width:100%; border-radius:4px;">`).join('')}
                     </div>`;
+                } else if (comp.type === 'actionRow') {
+                    v2Html += `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                        ${(comp.components || []).map(btn => {
+                            if (btn.type === 'button') {
+                                const colors = { primary: '#5865f2', secondary: '#4f545c', success: '#248046', danger: '#da373c' };
+                                return `<div style="background:${colors[btn.style] || colors.primary}; color:white; padding:6px 16px; border-radius:3px; font-size:0.8rem; font-weight:500; display:flex; align-items:center; gap:6px;">
+                                    ${btn.emoji || ''} ${btn.label || 'Button'}
+                                </div>`;
+                            } else {
+                                return `<div style="flex:1; min-width:150px; background:#1e1f22; border:1px solid #1e1f22; color:#dbdee1; padding:8px 12px; border-radius:3px; font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;">
+                                    ${btn.placeholder || 'Select...'} <i class="fas fa-chevron-down" style="font-size:0.6rem;"></i>
+                                </div>`;
+                            }
+                        }).join('')}
+                    </div>`;
                 }
             });
             
@@ -1423,12 +1438,72 @@ function renderV2Editor() {
                     <i class="fas fa-plus"></i> Add Image
                 </button>`;
         } else if (comp.type === 'actionRow') {
-            html += `<p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">Buttons/Selects are managed in the Routing Modules section below for now.</p>`;
+            html += `<div style="background:rgba(0,0,0,0.2); padding:12px; border-radius:8px; border:1px solid #3f4147;">
+                <div id="v2_row_${idx}_items" style="display:flex; flex-direction:column; gap:8px;">
+                    ${(comp.components || []).map((item, iIdx) => `
+                        <div style="background:#2b2d31; padding:8px; border-radius:4px; border:1px solid #3f4147;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <span style="font-size:0.7rem; color:var(--gold-text); text-transform:uppercase;">${item.type === 'button' ? 'Button' : 'Select Menu'}</span>
+                                <button class="z-btn-icon" style="color:#ed4245; font-size:0.8rem;" onclick="removeV2SubComponent(${idx}, ${iIdx})"><i class="fas fa-times"></i></button>
+                            </div>
+                            ${item.type === 'button' ? `
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                                    <input class="z-input" type="text" placeholder="Label" value="${item.label || ''}" oninput="updateV2SubField(${idx}, ${iIdx}, 'label', this.value)">
+                                    <select class="z-input" onchange="updateV2SubField(${idx}, ${iIdx}, 'style', this.value)">
+                                        <option value="primary" ${item.style === 'primary' ? 'selected' : ''}>Primary (Blurple)</option>
+                                        <option value="secondary" ${item.style === 'secondary' ? 'selected' : ''}>Secondary (Grey)</option>
+                                        <option value="success" ${item.style === 'success' ? 'selected' : ''}>Success (Green)</option>
+                                        <option value="danger" ${item.style === 'danger' ? 'selected' : ''}>Danger (Red)</option>
+                                    </select>
+                                </div>
+                                <div style="margin-top:8px;">
+                                    <input class="z-input" type="text" placeholder="Emoji (optional)" value="${item.emoji || ''}" oninput="updateV2SubField(${idx}, ${iIdx}, 'emoji', this.value)">
+                                </div>
+                            ` : `
+                                <input class="z-input" type="text" placeholder="Placeholder Text" value="${item.placeholder || ''}" oninput="updateV2SubField(${idx}, ${iIdx}, 'placeholder', this.value)">
+                            `}
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="display:flex; gap:8px; margin-top:12px;">
+                    <button class="z-btn z-btn-secondary" style="flex:1; font-size:0.75rem; padding:6px;" onclick="addV2SubComponent(${idx}, 'button')"><i class="fas fa-mouse-pointer"></i> Add Button</button>
+                    <button class="z-btn z-btn-secondary" style="flex:1; font-size:0.75rem; padding:6px;" onclick="addV2SubComponent(${idx}, 'select')"><i class="fas fa-list-ul"></i> Add Select</button>
+                </div>
+            </div>`;
         }
             
         html += `</div>`;
         return html;
     }).join('');
+}
+
+function addV2SubComponent(pIdx, type) {
+    if (!panelDraft.v2Components[pIdx].components) panelDraft.v2Components[pIdx].components = [];
+    if (panelDraft.v2Components[pIdx].components.length >= 5) return showToast('Maximum 5 components per row', true);
+    
+    let sub = { type: type, id: Date.now().toString() };
+    if (type === 'button') {
+        sub.label = 'Button';
+        sub.style = 'primary';
+    } else {
+        sub.placeholder = 'Select an option...';
+        sub.options = [];
+    }
+    
+    panelDraft.v2Components[pIdx].components.push(sub);
+    renderV2Editor();
+    updatePanelPreview();
+}
+
+function removeV2SubComponent(pIdx, sIdx) {
+    panelDraft.v2Components[pIdx].components.splice(sIdx, 1);
+    renderV2Editor();
+    updatePanelPreview();
+}
+
+function updateV2SubField(pIdx, sIdx, field, value) {
+    panelDraft.v2Components[pIdx].components[sIdx][field] = value;
+    updatePanelPreview();
 }
 
 function getIconForType(type) {

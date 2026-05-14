@@ -68,6 +68,28 @@ function buildV2Message(opts) {
                     });
                     container.addMediaGalleryComponents(gallery);
                 }
+            } else if (comp.type === 'actionRow') {
+                if (comp.components && comp.components.length > 0) {
+                    const row = new ActionRowBuilder();
+                    comp.components.forEach(item => {
+                        if (item.type === 'button') {
+                            const btn = new ButtonBuilder()
+                                .setLabel(item.label || 'Button')
+                                .setCustomId(item.id)
+                                .setStyle(getButtonStyle(item.style));
+                            if (item.emoji) btn.setEmoji(item.emoji);
+                            row.addComponents(btn);
+                        } else {
+                            const select = new StringSelectMenuBuilder()
+                                .setCustomId(item.id)
+                                .setPlaceholder(item.placeholder || 'Select...');
+                            // For now, we use placeholder options if none provided
+                            select.addOptions({ label: 'Option 1', value: '1' });
+                            row.addComponents(select);
+                        }
+                    });
+                    container.addActionRowComponents(row);
+                }
             }
         });
     } else {
