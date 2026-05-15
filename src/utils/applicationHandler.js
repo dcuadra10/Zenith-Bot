@@ -235,60 +235,67 @@ async function showReviewScreen(messageOrInteraction, appState) {
 }
 
 async function submitApplication(interaction, appState) {
-    const db = await getDb();
-    const config = appState.moduleConfigs;
+    // 1. Acknowledge the interaction immediately to prevent timeout (3s limit)
+    const isApprovalMode = !!(appState.moduleConfigs && appState.moduleConfigs.ticketsApprovalChannel);
+    
+    await interaction.update({ 
+        content: isApprovalMode ? '✅ Your application has been sent for admin review. You will be notified of the decision.' : '🚀 Creating your ticket channel now...', 
+        embeds: [], 
+        components: [] 
+    }).catch(e => console.error('Failed to update interaction:', e));
 
-    if (config && config.ticketsApprovalChannel) {
-        const crypto = require('crypto');
-        const uuid = crypto.randomUUID().substring(0, 8);
-        
-        await db.run(
-            `INSERT INTO pending_tickets (uuid, guildId, userId, optJson, answersJson) VALUES (?, ?, ?, ?, ?)`,
-            [uuid, appState.guildId, interaction.user.id, JSON.stringify(appState.opt), JSON.stringify(appState.answers)]
-        );
+    // 2. Process the rest in the background
+    try {
+        const db = await getDb();
+        const config = appState.moduleConfigs;
 
-        const adminChannel = interaction.client.channels.cache.get(config.ticketsApprovalChannel);
-        if (adminChannel) {
-            const adminEmbed = new EmbedBuilder()
-                .setTitle('📥 New Application for Review')
-                .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
-                .setDescription(`**User:** <@${interaction.user.id}>\n**Ticket Type:** ${appState.opt.label}\n\n**Answers Summary:**`)
-                .setColor('#ffd700');
-
-            // Discord limit is 25 fields. If more, we merge them into description or multiple embeds.
-            // For now, let's merge into a clean text summary to avoid field limits.
-            let fullAnswersText = '';
-            appState.answers.forEach((ans, i) => {
-                const line = `**${i+1}. ${ans.question}**\n${ans.answer}\n\n`;
-                if ((fullAnswersText + line).length < 4000) {
-                    fullAnswersText += line;
-                }
-            });
+        if (isApprovalMode) {
+            const crypto = require('crypto');
+            const uuid = crypto.randomUUID().substring(0, 8);
             
-            adminEmbed.setDescription(adminEmbed.data.description + '\n\n' + fullAnswersText);
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`admin_app_approve_${uuid}`).setLabel('Approve').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId(`admin_app_decline_${uuid}`).setLabel('Decline').setStyle(ButtonStyle.Danger)
+            await db.run(
+                `INSERT INTO pending_tickets (uuid, guildId, userId, optJson, answersJson) VALUES (?, ?, ?, ?, ?)`,
+                [uuid, appState.guildId, interaction.user.id, JSON.stringify(appState.opt), JSON.stringify(appState.answers)]
             );
 
-            try {
-                await adminChannel.send({ embeds: [adminEmbed], components: [row] });
-            } catch (sendErr) {
-                console.error('Failed to send admin notification:', sendErr);
-                // If embed fails (e.g. too long), try sending as plain text or shorter version
-                await adminChannel.send({ 
-                    content: `⚠️ **New Application from <@${interaction.user.id}>** (Embed too large)\nUUID: \`${uuid}\``,
-                    components: [row] 
-                }).catch(e => console.error('Final fallback failed:', e));
+            const adminChannel = interaction.client.channels.cache.get(config.ticketsApprovalChannel);
+            if (adminChannel) {
+                const adminEmbed = new EmbedBuilder()
+                    .setTitle('📥 New Application for Review')
+                    .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
+                    .setDescription(`**User:** <@${interaction.user.id}>\n**Ticket Type:** ${appState.opt.label}\n\n**Answers Summary:**`)
+                    .setColor('#ffd700');
+
+                let fullAnswersText = '';
+                appState.answers.forEach((ans, i) => {
+                    const line = `**${i+1}. ${ans.question}**\n${ans.answer}\n\n`;
+                    if ((fullAnswersText + line).length < 4000) {
+                        fullAnswersText += line;
+                    }
+                });
+                
+                adminEmbed.setDescription(adminEmbed.data.description + '\n\n' + fullAnswersText);
+
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId(`admin_app_approve_${uuid}`).setLabel('Approve').setStyle(ButtonStyle.Success),
+                    new ButtonBuilder().setCustomId(`admin_app_decline_${uuid}`).setLabel('Decline').setStyle(ButtonStyle.Danger)
+                );
+
+                await adminChannel.send({ embeds: [adminEmbed], components: [row] }).catch(async () => {
+                    await adminChannel.send({ 
+                        content: `⚠️ **New Application from <@${interaction.user.id}>** (Embed too large)\nUUID: \`${uuid}\``,
+                        components: [row] 
+                    });
+                });
             }
+        } else {
+            await createTicketChannel(interaction, appState.opt, appState.answers, appState.guildConfigs, appState.moduleConfigs);
         }
-        await interaction.update({ content: '✅ Your application has been sent for admin review. You will be notified of the decision.', embeds: [], components: [] });
-    } else {
-        await interaction.update({ content: '🚀 Creating your ticket channel now...', embeds: [], components: [] });
-        await createTicketChannel(interaction, appState.opt, appState.answers, appState.guildConfigs, appState.moduleConfigs);
+    } catch (err) {
+        console.error('Error in background submitApplication:', err);
+    } finally {
+        interaction.client.activeApplications.delete(interaction.user.id);
     }
-    interaction.client.activeApplications.delete(interaction.user.id);
 }
 
 function getQuestion(appState) {
