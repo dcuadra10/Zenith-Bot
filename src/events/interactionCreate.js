@@ -73,8 +73,12 @@ module.exports = {
                     await handleTicketSelection(interaction, opt, guildConfigs, moduleConfigs);
                 }
 
-            } else if (interaction.customId === 'start_app_yes' || interaction.customId === 'start_app_no' || interaction.customId.startsWith('app_choice_')) {
-                const { handleApplicationStartButton } = require('../utils/applicationHandler');
+            } else if (interaction.customId.startsWith('start_app_') || 
+                       interaction.customId.startsWith('app_choice_') || 
+                       interaction.customId === 'app_finalize_submit' || 
+                       interaction.customId === 'app_cancel_all') {
+                await handleApplicationStartButton(interaction);
+            } else if (interaction.customId === 'app_edit_select') {
                 await handleApplicationStartButton(interaction);
 
             } else if (interaction.customId.startsWith('claim_ticket_')) {
