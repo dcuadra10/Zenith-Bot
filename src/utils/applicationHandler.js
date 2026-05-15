@@ -281,9 +281,15 @@ async function submitApplication(interaction, appState) {
                     new ButtonBuilder().setCustomId(`admin_app_decline_${uuid}`).setLabel('Decline').setStyle(ButtonStyle.Danger)
                 );
 
-                await adminChannel.send({ embeds: [adminEmbed], components: [row] }).catch(async () => {
+                // Add ping for staff
+                let pingContent = '🔔 **New Application Received**';
+                if (config.ticketsPingRole) {
+                    pingContent = `🔔 <@&${config.ticketsPingRole}> **New Application Received**`;
+                }
+
+                await adminChannel.send({ content: pingContent, embeds: [adminEmbed], components: [row] }).catch(async () => {
                     await adminChannel.send({ 
-                        content: `⚠️ **New Application from <@${interaction.user.id}>** (Embed too large)\nUUID: \`${uuid}\``,
+                        content: `${pingContent}\n⚠️ **New Application from <@${interaction.user.id}>** (Embed too large)\nUUID: \`${uuid}\``,
                         components: [row] 
                     });
                 });
@@ -389,9 +395,17 @@ async function handleApplicationStartButton(interaction) {
 async function createTicketChannel(interaction, opt, answers, guildConfigs, moduleConfigs, targetUserId = null) {
     const guild = interaction.guild;
     const finalUserId = targetUserId || interaction.user.id;
-    const user = await interaction.client.users.fetch(finalUserId).catch(() => interaction.user);
+    
+    // Ensure we have the user object
+    let user;
+    try {
+        user = await interaction.client.users.fetch(finalUserId);
+    } catch (e) {
+        console.error('Failed to fetch user in createTicketChannel:', e);
+        user = interaction.user; // fallback
+    }
 
-    let baseName = opt.ticketName.replace('{username}', user.username).replace(/[^a-zA-Z0-9-]/g, '');
+    let baseName = opt.ticketName ? opt.ticketName.replace('{username}', user.username).replace(/[^a-zA-Z0-9-]/g, '') : `ticket-${user.username}`;
     const channelName = baseName.toLowerCase().substring(0, 30);
     
     // Priority: Option Specific Category -> Global Config Category -> undefined
