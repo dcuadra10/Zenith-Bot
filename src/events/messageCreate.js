@@ -14,7 +14,7 @@ module.exports = {
             return await handleApplicationMessage(message, message.client);
         }
 
-        if (!message.guild || message.author.bot) return;
+        if (!message.guild) return;
 
         const db = await getDb();
         const conf = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [message.guild.id]);
