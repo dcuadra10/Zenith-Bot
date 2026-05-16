@@ -61,7 +61,7 @@
 
         <!-- SIDEBAR -->
         <nav class="sidebar">
-            <div class="sidebar-server" id="sidebarServerCard">
+            <div class="sidebar-server" id="sidebarServerCard" onclick="goBackToGuilds()" style="cursor:pointer;">
                 <div class="sidebar-server-avatar" id="sidebarAvatar"></div>
                 <div class="sidebar-server-info">
                     <h4 id="sidebarGuildName">Loading...</h4>
@@ -81,6 +81,9 @@
             </div>
             <div class="sidebar-link" data-page="welcome">
                 <i class="fas fa-door-open link-icon"></i> Welcome Gates
+            </div>
+            <div class="sidebar-link" data-page="newkingdom">
+                <i class="fas fa-globe link-icon"></i> New Kingdom
             </div>
 
             <div class="sidebar-section">UTILITIES</div>
@@ -396,6 +399,49 @@
                 </div>
 
                 <button class="z-btn z-btn-primary" onclick="saveModuleConfig('leveling')"><i class="fas fa-save"></i> Save Engine</button>
+            </section>
+
+            <!-- ===== NEW KINGDOM ===== -->
+            <section id="page-newkingdom" class="page-section">
+                <div class="page-header">
+                    <h1>New Kingdom Tracking</h1>
+                    <p>Monitor and predict the arrival of new realms.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:rgba(16, 185, 129, 0.1);color:#10b981;"><i class="fas fa-globe"></i></div>
+                        <div>
+                            <h3>Reino Tracker</h3>
+                            <p>Forward kingdom alerts and predict the next spawn.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleNewKingdom">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="input-row">
+                        <div class="z-input-group">
+                            <label>Source Channel (Watching)</label>
+                            <select class="z-input" id="newKingdomSourceChannel"></select>
+                            <small style="color:var(--text-muted); font-size:0.75rem;">Channel where original alerts are sent.</small>
+                        </div>
+                        <div class="z-input-group">
+                            <label>Target Channel (Posting)</label>
+                            <select class="z-input" id="newKingdomTargetChannel"></select>
+                            <small style="color:var(--text-muted); font-size:0.75rem;">Channel where the bot will post stats.</small>
+                        </div>
+                    </div>
+                    <div class="z-input-group">
+                        <label>Ping Role</label>
+                        <select class="z-input" id="newKingdomPingRole"></select>
+                        <small style="color:var(--text-muted); font-size:0.75rem;">Role to notify when a new kingdom appears.</small>
+                    </div>
+                    <button class="z-btn z-btn-primary" onclick="saveModuleConfig('newkingdom')" style="margin-top:16px;"><i class="fas fa-save"></i> Save Tracker Config</button>
+                </div>
             </section>
 
             <!-- ===== TICKETS ===== -->

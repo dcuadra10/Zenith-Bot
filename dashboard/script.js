@@ -347,14 +347,15 @@ function populateAllDropdowns() {
         'panelChannelId', 'adminReviewChannel', 
         'marketApprovalChannel', 'marketFeeChannel', 'automodLogChannel', 
         'loggingChannel', 'countingChannel', 'swearJarChannel',
-        'levelUpChannel', 'ticketsTranscriptChannel', 'ticketsApprovalChannel', 'marketOwnerChannel'
+        'levelUpChannel', 'ticketsTranscriptChannel', 'ticketsApprovalChannel', 'marketOwnerChannel',
+        'newKingdomSourceChannel', 'newKingdomTargetChannel'
     ];
     
     // Selects that need a category
     const categorySelects = ['cfgTicketCategory', 'statsCategoryId', 'modalCategoryId'];
     
     // Selects that need a role
-    const roleSelects = ['marketMiddlemanRole', 'r4TrackingRole', 'autoRoleInput'];
+    const roleSelects = ['marketMiddlemanRole', 'r4TrackingRole', 'autoRoleInput', 'newKingdomPingRole'];
     
     channelSelects.forEach(id => populateDropdown(id, textChannels, 'Select a Channel'));
     categorySelects.forEach(id => populateDropdown(id, categories, 'Select a Category'));
@@ -731,6 +732,11 @@ function loadModuleToggles(mods) {
     setVal('r4TrackingRole', mods.r4TrackingRole);
     setVal('r4TrackingAdQuota', mods.r4TrackingAdQuota ?? 40);
     setVal('r4TrackingMsgQuota', mods.r4TrackingMsgQuota ?? 245);
+    // New Kingdom
+    setCheck('toggleNewKingdom', mods.newKingdomEnabled);
+    setVal('newKingdomSourceChannel', mods.newKingdomSourceChannel);
+    setVal('newKingdomTargetChannel', mods.newKingdomTargetChannel);
+    setVal('newKingdomPingRole', mods.newKingdomPingRole);
 }
 
 function setCheck(id, val) {
@@ -884,7 +890,12 @@ async function saveModuleConfig(moduleName) {
         r4TrackingEnabled: getCheck('toggleR4Tracking'),
         r4TrackingRole: getVal('r4TrackingRole'),
         r4TrackingAdQuota: parseInt(getVal('r4TrackingAdQuota')) || 40,
-        r4TrackingMsgQuota: parseInt(getVal('r4TrackingMsgQuota')) || 245
+        r4TrackingMsgQuota: parseInt(getVal('r4TrackingMsgQuota')) || 245,
+        // New Kingdom
+        newKingdomEnabled: getCheck('toggleNewKingdom'),
+        newKingdomSourceChannel: getVal('newKingdomSourceChannel'),
+        newKingdomTargetChannel: getVal('newKingdomTargetChannel'),
+        newKingdomPingRole: getVal('newKingdomPingRole')
     };
 
     try {
