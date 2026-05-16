@@ -339,7 +339,7 @@ function populateAllDropdowns() {
     // We will populate all <select> elements dynamically based on their purpose
     // Category dropdowns
     const categories = currentGuildChannels.filter(c => c.type === 4);
-    const textChannels = currentGuildChannels.filter(c => c.type === 0);
+    const textChannels = currentGuildChannels.filter(c => c.type === 0 || c.type === 5);
     
     // Selects that need a channel
     const channelSelects = [
