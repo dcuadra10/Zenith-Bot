@@ -158,6 +158,11 @@ async function getDb() {
                 answersJson TEXT,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            
+            CREATE TABLE IF NOT EXISTS new_kingdom_logs (
+                guildId TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
 
             CREATE TABLE IF NOT EXISTS r4_tracking (
                 userId TEXT,
@@ -321,7 +326,8 @@ async function getDb() {
             'swearJarTitle TEXT', 'swearJarMessage TEXT', 'swearJarColor TEXT',
             'logVoice INTEGER DEFAULT 1', 'logServer INTEGER DEFAULT 1', 'logInvites INTEGER DEFAULT 1',
             'levelUpTitle TEXT', 'levelUpMessage TEXT', 'levelUpColor TEXT', 'levelUpUseEmbed INTEGER DEFAULT 1',
-            'levelingBackground TEXT'
+            'levelingBackground TEXT',
+            'newKingdomEnabled INTEGER DEFAULT 0', 'newKingdomSourceChannel TEXT', 'newKingdomTargetChannel TEXT', 'newKingdomPingRole TEXT'
         ];
         for (const col of ticketCols) {
             try { await dbInstance.exec(`ALTER TABLE module_configs ADD COLUMN ${col}`); } catch (e) {}

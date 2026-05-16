@@ -250,6 +250,14 @@ module.exports = {
                 console.error('Swear Jar error:', e.message);
             }
         }
+
+        // --- 6. NEW KINGDOM MODULE ---
+        try {
+            const { handleNewKingdom } = require('../features/newKingdom');
+            await handleNewKingdom(message, conf);
+        } catch (e) {
+            console.error('New Kingdom error:', e.message);
+        }
     },
     // In-memory XP cooldown tracker
     _xpCooldowns: new Map()

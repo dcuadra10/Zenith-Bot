@@ -111,6 +111,14 @@ function buildV2Message(opts) {
                 )
             );
         }
+        // ADDED: Support for fields in V2
+        if (opts.fields && opts.fields.length > 0) {
+            opts.fields.forEach(f => {
+                container.addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent(`**${f.name}**\n${f.value}`)
+                );
+            });
+        }
     }
 
     // Footer
@@ -168,9 +176,9 @@ function buildEmbedMessage(opts) {
  */
 function buildMessage(useEmbed, opts) {
     if (useEmbed) {
-        return buildV2Message(opts);
-    } else {
         return buildEmbedMessage(opts);
+    } else {
+        return buildV2Message(opts);
     }
 }
 

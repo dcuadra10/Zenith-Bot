@@ -644,7 +644,8 @@ app.post('/api/modules/:guildId', async (req, res) => {
             'serverStatsEnabled', 'statsTotalMembers', 'statsOnline', 'statsBots', 'statsChannels', 'statsCategoryId',
             'antinukeEnabled', 'antinukeBan', 'antinukeChannel', 'antinukeRole', 'antinukeWebhook', 'antinukeThreshold', 'antinukeWhitelist',
             'r4TrackingEnabled', 'r4TrackingRole', 'r4TrackingAdQuota', 'r4TrackingMsgQuota',
-            'swearJarEnabled', 'swearJarChannel', 'swearJarWords', 'swearJarPing'
+            'swearJarEnabled', 'swearJarChannel', 'swearJarWords', 'swearJarPing',
+            'newKingdomEnabled', 'newKingdomSourceChannel', 'newKingdomTargetChannel', 'newKingdomPingRole'
         ];
         
         const allFields = ['guildId', ...fields];

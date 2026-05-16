@@ -194,6 +194,18 @@ async function handleApplicationMessage(message, client) {
     }
 }
 
+function formatQuestionLabel(index, questionText, prefix = '') {
+    const cleanText = questionText.trim();
+    // If it already starts with a number followed by a dot or parenthesis, don't add another number
+    if (/^\d+[\.\)]/.test(cleanText)) {
+        return prefix ? `${prefix}: ${cleanText}` : cleanText;
+    }
+    const num = index + 1;
+    if (prefix === 'Q') return `Q${num}: ${cleanText}`;
+    if (prefix) return `${prefix} ${num}: ${cleanText}`;
+    return `${num}. ${cleanText}`;
+}
+
 async function showReviewScreen(messageOrInteraction, appState) {
     const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
     const user = messageOrInteraction.user || messageOrInteraction.author;
@@ -202,7 +214,8 @@ async function showReviewScreen(messageOrInteraction, appState) {
     appState.answers.forEach((ans, i) => {
         let displayAns = ans.answer;
         if (displayAns.length > 100) displayAns = displayAns.substring(0, 97) + '...';
-        const line = `**${i + 1}. ${ans.question}**\n> ${displayAns}\n\n`;
+        const questionLabel = formatQuestionLabel(i, ans.question);
+        const line = `**${questionLabel}**\n> ${displayAns}\n\n`;
         if ((summary + line).length < 4000) {
             summary += line;
         }
@@ -268,7 +281,8 @@ async function submitApplication(interaction, appState) {
 
                 let fullAnswersText = '';
                 appState.answers.forEach((ans, i) => {
-                    const line = `**${i+1}. ${ans.question}**\n${ans.answer}\n\n`;
+                    const questionLabel = formatQuestionLabel(i, ans.question);
+                    const line = `**${questionLabel}**\n${ans.answer}\n\n`;
                     if ((fullAnswersText + line).length < 4000) {
                         fullAnswersText += line;
                     }
@@ -464,7 +478,8 @@ async function createTicketChannel(interaction, opt, answers, guildConfigs, modu
     const fields = [];
     if (answers && answers.length > 0) {
         answers.forEach((ans, i) => {
-            fields.push({ name: `Q${i+1}: ${ans.question}`, value: ans.answer });
+            const questionLabel = formatQuestionLabel(i, ans.question, 'Q');
+            fields.push({ name: questionLabel, value: ans.answer });
         });
     }
 
