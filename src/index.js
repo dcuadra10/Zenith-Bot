@@ -645,7 +645,7 @@ app.post('/api/modules/:guildId', async (req, res) => {
             'antinukeEnabled', 'antinukeBan', 'antinukeChannel', 'antinukeRole', 'antinukeWebhook', 'antinukeThreshold', 'antinukeWhitelist',
             'r4TrackingEnabled', 'r4TrackingRole', 'r4TrackingAdQuota', 'r4TrackingMsgQuota',
             'swearJarEnabled', 'swearJarChannel', 'swearJarWords', 'swearJarPing',
-            'newKingdomEnabled', 'newKingdomSourceChannel', 'newKingdomTargetChannel', 'newKingdomPingRole'
+            'newkingdomenabled', 'newkingdomsourcechannel', 'newkingdomtargetchannel', 'newkingdompingrole'
         ];
         
         const allFields = ['guildId', ...fields];

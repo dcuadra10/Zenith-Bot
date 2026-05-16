@@ -17,28 +17,34 @@ module.exports = {
         if (!message.guild) return;
 
         const db = await getDb();
-        const conf = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [message.guild.id]);
-        if (!conf) return;
+        const confRaw = await db.get(`SELECT * FROM module_configs WHERE "guildId" = ?`, [message.guild.id]);
+        if (!confRaw) return;
+        
+        // Normalize keys to lowercase for consistent access across different DB providers
+        const conf = Object.keys(confRaw).reduce((acc, key) => {
+            acc[key.toLowerCase()] = confRaw[key];
+            return acc;
+        }, {});
 
         // Ignore other bots EXCEPT for New Kingdom alerts
-        if (message.author.bot && message.channel.id !== conf.newKingdomSourceChannel) return;
+        if (message.author.bot && message.channel.id !== conf.newkingdomsourcechannel) return;
         // Even if it's the right channel, ignore OURSELF to avoid infinite loops
         if (message.author.id === client.user.id) return;
 
         if (!message.author.bot) {
             // --- 1. AUTO-MODERATION ---
-            if (conf.automodEnabled) {
+            if (conf.automodenabled) {
                 let shouldDelete = false;
                 let reason = '';
 
                 // Anti-Mentions
-                if (conf.automodMentions && message.mentions.users.size > conf.automodMaxMentions) {
+                if (conf.automodmentions && message.mentions.users.size > conf.automodmaxmentions) {
                     shouldDelete = true;
                     reason = 'Too many mentions';
                 }
 
                 // Anti-Links (Ignore if admin)
-                if (!shouldDelete && conf.automodLinks && !message.member.permissions.has('Administrator')) {
+                if (!shouldDelete && conf.automodlinks && !message.member.permissions.has('Administrator')) {
                     const linkRegex = new RegExp('https?://\\S+', 'g');
                     if (linkRegex.test(message.content)) {
                         shouldDelete = true;
@@ -47,7 +53,7 @@ module.exports = {
                 }
 
                 // Anti-Caps
-                if (!shouldDelete && conf.automodCaps && message.content.length > 5) {
+                if (!shouldDelete && conf.automodcaps && message.content.length > 5) {
                     const upper = message.content.replace(/[^A-Z]/g, '').length;
                     if ((upper / message.content.length) > 0.7) {
                         shouldDelete = true;
@@ -56,8 +62,8 @@ module.exports = {
                 }
 
                 // Bad Words
-                if (!shouldDelete && conf.automodWords && conf.automodWordList) {
-                    const badWords = conf.automodWordList.split(',').map(w => w.trim().toLowerCase());
+                if (!shouldDelete && conf.automodwords && conf.automodwordlist) {
+                    const badWords = conf.automodwordlist.split(',').map(w => w.trim().toLowerCase());
                     const msgLower = message.content.toLowerCase();
                     for (const w of badWords) {
                         if (w && msgLower.includes(w)) {
@@ -73,8 +79,8 @@ module.exports = {
                     const warningMsg = await message.channel.send(`⚠️ <@${message.author.id}>, your message was removed: **${reason}**.`);
                     setTimeout(() => warningMsg.delete().catch(() => {}), 3000);
                     
-                    if (conf.automodLogChannel) {
-                        const logChannel = message.guild.channels.cache.get(conf.automodLogChannel);
+                    if (conf.automodlogchannel) {
+                        const logChannel = message.guild.channels.cache.get(conf.automodlogchannel);
                         if (logChannel) {
                             const embed = new AttachmentBuilder(Buffer.from(''), { name: 'filler' }); // placeholder if needed
                             logChannel.send(`🛡️ **AutoMod Alert** | User: <@${message.author.id}> | Reason: ${reason}`);
@@ -85,10 +91,10 @@ module.exports = {
             }
 
             // --- 2. COUNTING GAME ---
-            if (conf.countingEnabled && conf.countingChannel === message.channel.id) {
+            if (conf.countingenabled && conf.countingchannel === message.channel.id) {
                 let num = null;
                 
-                if (conf.countingMath) {
+                if (conf.countingmath) {
                     const exprMatch = message.content.match(/^[-+*/%\s\d().]+/);
                     if (exprMatch) {
                         try {
@@ -104,10 +110,10 @@ module.exports = {
                 }
 
                 if (num !== null) {
-                    const isCorrectNum = (num === conf.countingCurrent + 1);
-                    const isSameUser = (message.author.id === conf.countingLastUser);
+                    const isCorrectNum = (num === conf.countingcurrent + 1);
+                    const isSameUser = (message.author.id === conf.countinglastuser);
 
-                    if (isCorrectNum && !conf.countingSameUser && isSameUser) {
+                    if (isCorrectNum && !conf.countingsameuser && isSameUser) {
                         // Right number, but counting twice in a row (Warning, no reset)
                         await message.delete().catch(() => {});
                         const warnEmbed = new EmbedBuilder()
@@ -119,9 +125,9 @@ module.exports = {
                     else if (isCorrectNum) {
                         // Right number, valid user (Proceed)
                         await message.react('✅').catch(() => {});
-                        await db.run(`UPDATE module_configs SET countingCurrent = ?, countingLastUser = ? WHERE guildId = ?`, [num, message.author.id, message.guild.id]);
+                        await db.run(`UPDATE module_configs SET countingcurrent = ?, countinglastuser = ? WHERE "guildId" = ?`, [num, message.author.id, message.guild.id]);
                     } 
-                    else if (conf.countingReset) {
+                    else if (conf.countingreset) {
                         // Wrong number triggers nuclear reset
                         await message.react('❌').catch(() => {});
                         const resetEmbed = new EmbedBuilder()
@@ -129,7 +135,7 @@ module.exports = {
                             .setDescription(`**<@${message.author.id}>** ruined the sequence by putting \`${num}\`!\n\nThe stack has been reset to **0**. Start again from \`1\`.`)
                             .setColor('Red');
                         await message.channel.send({ embeds: [resetEmbed] });
-                        await db.run(`UPDATE module_configs SET countingCurrent = 0, countingLastUser = NULL WHERE guildId = ?`, [message.guild.id]);
+                        await db.run(`UPDATE module_configs SET countingcurrent = 0, countinglastuser = NULL WHERE "guildId" = ?`, [message.guild.id]);
                     } 
                     else {
                         // Wrong number, but Reset disabled (just delete)
@@ -140,10 +146,10 @@ module.exports = {
             }
 
             // --- 3. LEVELING SYSTEM ---
-            if (conf.levelingEnabled) {
+            if (conf.levelingenabled) {
                 try {
                     // XP Cooldown check (in-memory)
-                    const cooldownMs = (conf.xpCooldown || 60) * 1000;
+                    const cooldownMs = (conf.xpcooldown || 60) * 1000;
                     const cooldownKey = `${message.guild.id}_${message.author.id}`;
                     const now = Date.now();
                     const lastXp = module.exports._xpCooldowns.get(cooldownKey);
@@ -151,7 +157,7 @@ module.exports = {
                     if (!lastXp || (now - lastXp) >= cooldownMs) {
                         module.exports._xpCooldowns.set(cooldownKey, now);
                         
-                        const xpAmount = Math.floor(Math.random() * ((conf.xpMax || 15) - (conf.xpMin || 5) + 1)) + (conf.xpMin || 5);
+                        const xpAmount = Math.floor(Math.random() * ((conf.xpmax || 15) - (conf.xpmin || 5) + 1)) + (conf.xpmin || 5);
                         
                         await db.run(
                             `INSERT INTO users (userId, xp, level) VALUES (?, ?, 0)
@@ -168,10 +174,10 @@ module.exports = {
                         if (userProfile.xp >= requiredXP) {
                             await db.run(`UPDATE users SET level = level + 1, xp = 0 WHERE userId = ?`, [message.author.id]);
                             
-                            const upChannel = conf.levelUpChannel ? message.guild.channels.cache.get(conf.levelUpChannel) : message.channel;
+                            const upChannel = conf.levelupchannel ? message.guild.channels.cache.get(conf.levelupchannel) : message.channel;
                             if (upChannel) {
-                                let title = conf.levelUpTitle || '🎉 Level Up!';
-                                let desc = conf.levelUpMessage || `Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`;
+                                let title = conf.leveluptitle || '🎉 Level Up!';
+                                let desc = conf.levelupmessage || `Congratulations <@${message.author.id}>, you just leveled up to **Level ${currentLevel + 1}**!`;
                                 
                                 const pTitle = title.replace('{user}', `<@${message.author.id}>`)
                                                     .replace('{level}', currentLevel + 1)
@@ -180,17 +186,17 @@ module.exports = {
                                                 .replace('{level}', currentLevel + 1)
                                                 .replace('{server}', message.guild.name);
 
-                                const payload = buildMessage(conf.levelUpUseEmbed !== 0, {
+                                const payload = buildMessage(conf.levelupuseembed !== 0, {
                                     title: pTitle,
                                     description: pDesc,
-                                    color: conf.levelUpColor || '#FFD700'
+                                    color: conf.levelupcolor || '#FFD700'
                                 });
                                 upChannel.send(payload).catch(() => {});
                             }
 
                             // Check Role Rewards (if configured)
                             try {
-                                const rewards = JSON.parse(conf.roleRewards || '[]');
+                                const rewards = JSON.parse(conf.rolerewards || '[]');
                                 const reward = rewards.find(r => parseInt(r.level) === currentLevel + 1);
                                 if (reward && reward.roleId) {
                                     const rr = message.guild.roles.cache.get(reward.roleId.replace(/[^0-9]/g, ''));
@@ -205,9 +211,9 @@ module.exports = {
             }
 
             // --- 4. R4 TRACKING (MESSAGES) ---
-            if (conf.r4TrackingEnabled && conf.r4TrackingRole) {
+            if (conf.r4trackingenabled && conf.r4trackingrole) {
                 try {
-                    if (message.member.roles.cache.has(conf.r4TrackingRole.replace(/[^0-9]/g, ''))) {
+                    if (message.member.roles.cache.has(conf.r4trackingrole.replace(/[^0-9]/g, ''))) {
                         const weekId = getISOWeekString();
                         await db.run(
                             `INSERT INTO r4_tracking (userId, guildId, weekId, messages, ads, excused) 
@@ -222,10 +228,10 @@ module.exports = {
             }
 
             // --- 5. SWEAR JAR ---
-            if (conf.swearJarEnabled && conf.swearJarChannel) {
+            if (conf.swearjarenabled && conf.swearjarchannel) {
                 try {
-                    const customWords = conf.swearJarWords ? conf.swearJarWords.split(',').map(w => w.trim().toLowerCase()) : [];
-                    const autoWords = conf.automodWordList ? conf.automodWordList.split(',').map(w => w.trim().toLowerCase()) : [];
+                    const customWords = conf.swearjarwords ? conf.swearjarwords.split(',').map(w => w.trim().toLowerCase()) : [];
+                    const autoWords = conf.automodwordlist ? conf.automodwordlist.split(',').map(w => w.trim().toLowerCase()) : [];
                     const words = customWords.length > 0 ? customWords : autoWords;
                     
                     if (words.length > 0) {
@@ -233,12 +239,12 @@ module.exports = {
                         const foundWord = words.find(w => content.length > 0 && w.length > 0 && content.includes(w));
 
                         if (foundWord) {
-                            const sjChannel = message.guild.channels.cache.get(conf.swearJarChannel);
+                            const sjChannel = message.guild.channels.cache.get(conf.swearjarchannel);
                             if (sjChannel) {
-                                const ping = conf.swearJarPing ? `<@${message.author.id}>` : `**${message.author.username}**`;
+                                const ping = conf.swearjarping ? `<@${message.author.id}>` : `**${message.author.username}**`;
                                 
-                                let title = conf.swearJarTitle || '🏺 Swear Jar Contribution!';
-                                let desc = conf.swearJarMessage || `${ping} just added a coin to the jar for using prohibited dialect: \`${foundWord}\``;
+                                let title = conf.swearjartitle || '🏺 Swear Jar Contribution!';
+                                let desc = conf.swearjarmessage || `${ping} just added a coin to the jar for using prohibited dialect: \`${foundWord}\``;
 
                                 const pTitle = title.replace('{user}', ping).replace('{word}', foundWord);
                                 const pDesc = desc.replace('{user}', ping).replace('{word}', foundWord);
@@ -246,7 +252,7 @@ module.exports = {
                                 const payload = buildMessage(true, {
                                     title: pTitle,
                                     description: pDesc,
-                                    color: conf.swearJarColor || '#FFD700'
+                                    color: conf.swearjarcolor || '#FFD700'
                                 });
                                 sjChannel.send(payload).catch(() => {});
                             }

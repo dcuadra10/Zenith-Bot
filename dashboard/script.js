@@ -737,10 +737,10 @@ function loadModuleToggles(mods) {
     setVal('r4TrackingAdQuota', mods.r4TrackingAdQuota ?? 40);
     setVal('r4TrackingMsgQuota', mods.r4TrackingMsgQuota ?? 245);
     // New Kingdom
-    setCheck('toggleNewKingdom', mods.newKingdomEnabled);
-    setVal('newKingdomSourceChannel', mods.newKingdomSourceChannel);
-    setVal('newKingdomTargetChannel', mods.newKingdomTargetChannel);
-    setVal('newKingdomPingRole', mods.newKingdomPingRole);
+    setCheck('toggleNewKingdom', mods.newkingdomenabled);
+    setVal('newKingdomSourceChannel', mods.newkingdomsourcechannel);
+    setVal('newKingdomTargetChannel', mods.newkingdomtargetchannel);
+    setVal('newKingdomPingRole', mods.newkingdompingrole);
 }
 
 function setCheck(id, val) {
@@ -896,10 +896,10 @@ async function saveModuleConfig(moduleName) {
         r4TrackingAdQuota: parseInt(getVal('r4TrackingAdQuota')) || 40,
         r4TrackingMsgQuota: parseInt(getVal('r4TrackingMsgQuota')) || 245,
         // New Kingdom
-        newKingdomEnabled: getCheck('toggleNewKingdom'),
-        newKingdomSourceChannel: getVal('newKingdomSourceChannel'),
-        newKingdomTargetChannel: getVal('newKingdomTargetChannel'),
-        newKingdomPingRole: getVal('newKingdomPingRole')
+        newkingdomenabled: getCheck('toggleNewKingdom'),
+        newkingdomsourcechannel: getVal('newKingdomSourceChannel'),
+        newkingdomtargetchannel: getVal('newKingdomTargetChannel'),
+        newkingdompingrole: getVal('newKingdomPingRole')
     };
 
     try {

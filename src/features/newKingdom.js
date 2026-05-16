@@ -3,8 +3,19 @@ const { getDb } = require('../config/database');
 const ms = require('ms');
 
 async function handleNewKingdom(message, conf) {
-    if (!conf.newKingdomEnabled || !conf.newKingdomSourceChannel || !conf.newKingdomTargetChannel) return;
-    if (message.channel.id !== conf.newKingdomSourceChannel) return;
+    console.log(`[New Kingdom Debug] Checking message in ${message.channel.id}. Enabled: ${conf.newkingdomenabled}, Source: ${conf.newkingdomsourcechannel}, Target: ${conf.newkingdomtargetchannel}`);
+    
+    if (!conf.newkingdomenabled || !conf.newkingdomsourcechannel || !conf.newkingdomtargetchannel) {
+        console.log('[New Kingdom Debug] Missing configuration. Returning.');
+        return;
+    }
+    
+    if (message.channel.id !== conf.newkingdomsourcechannel) {
+        console.log(`[New Kingdom Debug] Channel ID mismatch: ${message.channel.id} !== ${conf.newkingdomsourcechannel}`);
+        return;
+    }
+
+    console.log('[New Kingdom Debug] Pattern matched! Processing...');
 
     const db = await getDb();
     const guildId = message.guild.id;
@@ -44,13 +55,13 @@ async function handleNewKingdom(message, conf) {
     }
 
     // 4. Send the update
-    const targetChannel = message.guild.channels.cache.get(conf.newKingdomTargetChannel);
+    const targetChannel = message.guild.channels.cache.get(conf.newkingdomtargetchannel);
     if (targetChannel) {
         // Clean @New Kingdom Alert from content
         const cleanContent = message.content.replace(/@New Kingdom Alert/g, '').trim();
         
         const sirenEmoji = '<:reino:1505012438700003419>';
-        const pingStr = conf.newKingdomPingRole ? `${sirenEmoji} <@&${conf.newKingdomPingRole}>` : sirenEmoji;
+        const pingStr = conf.newkingdompingrole ? `${sirenEmoji} <@&${conf.newkingdompingrole}>` : sirenEmoji;
 
         const embed = new EmbedBuilder()
             .setTitle('🌍 New Kingdom Detected!')
