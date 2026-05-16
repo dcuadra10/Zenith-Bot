@@ -46,13 +46,11 @@ async function handleNewKingdom(message, conf) {
     // 4. Send the update
     const targetChannel = message.guild.channels.cache.get(conf.newKingdomTargetChannel);
     if (targetChannel) {
-        const ping = conf.newKingdomPingRole ? `<@&${conf.newKingdomPingRole}>` : '';
-        
         // Clean @New Kingdom Alert from content
         const cleanContent = message.content.replace(/@New Kingdom Alert/g, '').trim();
         
         const sirenEmoji = '<:reino:1505012438700003419>';
-        const ping = conf.newKingdomPingRole ? `${sirenEmoji} <@&${conf.newKingdomPingRole}>` : sirenEmoji;
+        const pingStr = conf.newKingdomPingRole ? `${sirenEmoji} <@&${conf.newKingdomPingRole}>` : sirenEmoji;
 
         const embed = new EmbedBuilder()
             .setTitle('🌍 New Kingdom Detected!')
@@ -64,7 +62,7 @@ async function handleNewKingdom(message, conf) {
         const updatedStatsText = statsText.replace(/⏱️/g, sirenEmoji);
         embed.setFields({ name: 'Statistics & Prediction', value: updatedStatsText });
 
-        await targetChannel.send({ content: ping, embeds: [embed] });
+        await targetChannel.send({ content: pingStr, embeds: [embed] });
     }
 }
 
