@@ -410,6 +410,10 @@ async function loadDashboardData() {
     if (!activeGuild) return;
     const gid = activeGuild.id;
 
+    // Reset current data to avoid showing stale info from previous guild
+    currentGuildChannels = [];
+    currentGuildRoles = [];
+
     // Fetch channels and roles
     try {
         const [chanRes, roleRes] = await Promise.all([
