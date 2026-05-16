@@ -17,7 +17,7 @@ module.exports = {
         if (!message.guild) return;
 
         const db = await getDb();
-        const confRaw = await db.get(`SELECT * FROM module_configs WHERE "guildId" = ?`, [message.guild.id]);
+        const confRaw = await db.get(`SELECT * FROM module_configs WHERE guildid = ?`, [message.guild.id]);
         if (!confRaw) return;
         
         // Normalize keys to lowercase for consistent access across different DB providers
@@ -125,7 +125,7 @@ module.exports = {
                     else if (isCorrectNum) {
                         // Right number, valid user (Proceed)
                         await message.react('✅').catch(() => {});
-                        await db.run(`UPDATE module_configs SET countingcurrent = ?, countinglastuser = ? WHERE "guildId" = ?`, [num, message.author.id, message.guild.id]);
+                        await db.run(`UPDATE module_configs SET countingcurrent = ?, countinglastuser = ? WHERE guildid = ?`, [num, message.author.id, message.guild.id]);
                     } 
                     else if (conf.countingreset) {
                         // Wrong number triggers nuclear reset
@@ -135,7 +135,7 @@ module.exports = {
                             .setDescription(`**<@${message.author.id}>** ruined the sequence by putting \`${num}\`!\n\nThe stack has been reset to **0**. Start again from \`1\`.`)
                             .setColor('Red');
                         await message.channel.send({ embeds: [resetEmbed] });
-                        await db.run(`UPDATE module_configs SET countingcurrent = 0, countinglastuser = NULL WHERE "guildId" = ?`, [message.guild.id]);
+                        await db.run(`UPDATE module_configs SET countingcurrent = 0, countinglastuser = NULL WHERE guildid = ?`, [message.guild.id]);
                     } 
                     else {
                         // Wrong number, but Reset disabled (just delete)
