@@ -35,7 +35,22 @@ module.exports = {
                     });
 
                     payload.content = `<@${member.id}>`;
-                    channel.send(payload).catch(()=>{});
+                    await channel.send(payload).catch(()=>{});
+
+                    // --- Welcome Reward Notification ---
+                    if (conf.ecoEnabled) {
+                        const notifyChannelId = conf.ecoWelcomeNotifyChannel || conf.welcomeChannel;
+                        const notifyChannel = member.guild.channels.cache.get(notifyChannelId);
+                        
+                        if (notifyChannel) {
+                            const amount = conf.ecoCoinsPerWelcome || 5;
+                            const notifyEmbed = new EmbedBuilder()
+                                .setDescription(`✨ **A new citizen has arrived!**\n\n💰 Be the first to say **Welcome** (or "Bienvenido") in <#${conf.welcomeChannel}> to earn **${amount}** coins!`)
+                                .setColor('#f59e0b');
+                            
+                            await notifyChannel.send({ embeds: [notifyEmbed] }).catch(()=>{});
+                        }
+                    }
                 }
             }
 
@@ -67,6 +82,13 @@ module.exports = {
                          ON CONFLICT(userId) DO UPDATE SET invites = users.invites + 1`,
                         [inviterId]
                     );
+
+                    // Economy reward for inviter
+                    if (conf && (conf.ecoEnabled || conf.ecoenabled)) {
+                        const { addBalance } = require('../utils/economyHandler');
+                        const amount = (conf.ecoCoinsPerInvite || conf.ecocoinsperinvite) || 50;
+                        await addBalance(inviterId, amount, member.guild.id);
+                    }
                     
                     oldInvites.set(usedInvite.code, usedInvite.uses);
                 }

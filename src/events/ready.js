@@ -4,10 +4,30 @@ module.exports = {
     async execute(client) {
         console.log(`🤖 Logged in as ${client.user.tag}!`);
         
+        // Initialize Database Schema
+        try {
+            const { initializeSchema } = require('../config/database');
+            await initializeSchema();
+        } catch (e) {
+            console.error('[DB] Failed to initialize schema at startup:', e);
+        }
+        
         // Registrar Comandos
         try {
-            await client.application.commands.set(client.commands.map(c => c.data));
-            console.log('✅ Slash Commands Cargados');
+            const devGuildId = '1431859727285092403'; 
+            const devGuild = client.guilds.cache.get(devGuildId);
+            
+            if (devGuild) {
+                // Delete global commands to avoid duplicates
+                await client.application.commands.set([]);
+                
+                await devGuild.commands.set(client.commands.map(c => c.data));
+                console.log(`✅ Slash Commands Cargados (Guild: ${devGuildId})`);
+            } else {
+                // Fallback to global if guild not found
+                await client.application.commands.set(client.commands.map(c => c.data));
+                console.log('✅ Slash Commands Cargados (Global)');
+            }
         } catch(e) {
             console.error('Error cargando comandos', e);
         }

@@ -97,6 +97,9 @@
             <div class="sidebar-link" data-page="market" style="color:var(--accent-cyan);">
                 <i class="fas fa-shopping-cart link-icon"></i> Market+ System
             </div>
+            <div class="sidebar-link" data-page="economy">
+                <i class="fas fa-coins link-icon"></i> Economy System
+            </div>
             <div class="sidebar-link" data-page="logging">
                 <i class="fas fa-clipboard-list link-icon"></i> Logging
             </div>
@@ -425,6 +428,7 @@
                 <div class="z-card">
                     <div class="z-input-group">
                         <label>Target Channel (Posting)</label>
+
                         <select class="z-input" id="newKingdomTargetChannel"></select>
                         <small style="color:var(--text-muted); font-size:0.75rem;">Channel where the bot will post stats.</small>
                     </div>
@@ -1196,6 +1200,102 @@
                 </div>
             </div>
 
+            <!-- ===== ECONOMY SYSTEM ===== -->
+            <section id="page-economy" class="page-section">
+                <div class="page-header">
+                    <h1>Economic Infrastructure</h1>
+                    <p>Manage the kingdom's treasury and rewards system.</p>
+                </div>
+
+                <div class="module-header">
+                    <div class="module-header-info">
+                        <div class="module-icon" style="background:var(--accent-gold-soft);color:var(--accent-gold);"><i class="fas fa-coins"></i></div>
+                        <div>
+                            <h3>Treasury Core</h3>
+                            <p>Enable coin rewards for community engagement.</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleEconomy">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="z-card">
+                    <div class="z-card-header">
+                        <h3>Reward Parameters</h3>
+                    </div>
+                    <div class="grid-3">
+                        <div class="z-input-group">
+                            <label>Coins per Message</label>
+                            <input class="z-input" type="number" id="ecoCoinsPerMessage" value="1" min="0">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Coins per Ad</label>
+                            <input class="z-input" type="number" id="ecoCoinsPerAd" value="10" min="0">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Coins per Invite</label>
+                            <input class="z-input" type="number" id="ecoCoinsPerInvite" value="50" min="0">
+                        </div>
+                    </div>
+                    <div class="grid-3" style="margin-top:16px;">
+                        <div class="z-input-group">
+                            <label>Coins per Welcome</label>
+                            <input class="z-input" type="number" id="ecoCoinsPerWelcome" value="5" min="0">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Coins per Boost</label>
+                            <input class="z-input" type="number" id="ecoCoinsPerBoost" value="100" min="0">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Coins per Giveaway Win</label>
+                            <input class="z-input" type="number" id="ecoCoinsPerGiveaway" value="200" min="0">
+                        </div>
+                    </div>
+                    <div class="grid-3" style="margin-top:16px;">
+                        <div class="z-input-group">
+                            <label>Coins per VC Minute</label>
+                            <input class="z-input" type="number" id="ecoCoinsPerVCMinute" value="1" min="0">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Welcome Keywords (Comma separated)</label>
+                            <input class="z-input" type="text" id="ecoWelcomeKeywords" placeholder="welcome,bienvenido,bienvenida">
+                        </div>
+                        <div class="z-input-group">
+                            <label>Welcome Alert Channel</label>
+                            <select class="z-input" id="ecoWelcomeNotifyChannel"></select>
+                        </div>
+                    </div>
+                    <button class="z-btn z-btn-primary" style="margin-top:24px;" onclick="saveModuleConfig('economy')"><i class="fas fa-save"></i> Synchronize Treasury</button>
+                </div>
+
+                <div class="z-card" style="margin-top:32px;">
+                    <div class="z-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3>Shop Inventory</h3>
+                        <button class="z-btn z-btn-secondary z-btn-sm" onclick="openShopAddModal()"><i class="fas fa-plus"></i> Manufacture Item</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="z-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shopTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding: 40px; color:var(--text-muted);">No items in inventory.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
             <!-- ===== AUTO-ROLE ===== -->
             <section id="page-autorole" class="page-section">
                 <div class="page-header">
@@ -1315,6 +1415,42 @@
         </div>
     </div>
 
+    <!-- MODAL FOR SHOP ITEM MANAGEMENT -->
+    <div id="shopAddModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:2000; align-items:center; justify-content:center;">
+        <div class="z-card" style="width:100%; max-width:500px; border:1px solid var(--border-medium);">
+            <div class="z-card-header">
+                <h3 id="shopModalTitle">Manufacture Item</h3>
+                <button style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;" onclick="closeModal('shopAddModal')">&times;</button>
+            </div>
+            
+            <div class="z-input-group">
+                <label>Item Name</label>
+                <input class="z-input" type="text" id="shopItemName" placeholder="e.g. VIP Access">
+            </div>
+            <div class="z-input-group">
+                <label>Price (Coins)</label>
+                <input class="z-input" type="number" id="shopItemPrice" value="100" min="0">
+            </div>
+            <div class="z-input-group">
+                <label>Description</label>
+                <textarea class="z-input" id="shopItemDesc" placeholder="What does this item do?"></textarea>
+            </div>
+            <div class="z-input-group">
+                <label>Type</label>
+                <select class="z-input" id="shopItemType" onchange="toggleShopRoleInput()">
+                    <option value="role">Role Reward</option>
+                    <option value="item">Custom Item</option>
+                </select>
+            </div>
+            <div class="z-input-group" id="shopRoleInputGroup">
+                <label>Target Role</label>
+                <select class="z-input" id="shopItemRole"></select>
+            </div>
+
+            <button class="z-btn z-btn-primary z-btn-block" style="margin-top:20px;" onclick="saveShopItem()"><i class="fas fa-check"></i> Register Item</button>
+        </div>
+    </div>
+
     <!-- MODAL FOR PANEL COMPONENT SETTINGS -->
     <div id="optionSettingsModal" class="modal-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:2000; align-items:center; justify-content:center;">
         <div class="z-card" style="width:100%; max-width:600px; max-height:90vh; overflow-y:auto; border:1px solid var(--border-medium);">
@@ -1395,7 +1531,11 @@
     <!-- Injecting simple JS functionality to handle modals -->
     <script>
         function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('active');
+                el.style.display = 'none';
+            }
         }
     </script>
     <script src="script.js"></script>

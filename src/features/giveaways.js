@@ -56,6 +56,16 @@ async function checkGiveaways(client) {
                 // Announce winners
                 if (winners.length > 0) {
                     await channel.send(`🎉 Congratulations ${winners.map(w => `<@${w.id}>`).join(', ')}! You won the **${ga.prize}**!`);
+                    
+                    // Economy reward for winners
+                    const conf = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [ga.guildId]);
+                    if (conf && conf.ecoEnabled) {
+                        const { addBalance } = require('../utils/economyHandler');
+                        const amount = conf.ecoCoinsPerGiveaway || 200;
+                        for (const winner of winners) {
+                            await addBalance(winner.id, amount);
+                        }
+                    }
                 } else {
                     await channel.send(`🛑 No valid participants entered the **${ga.prize}** giveaway.`);
                 }

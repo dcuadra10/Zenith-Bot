@@ -31,9 +31,9 @@ async function processAdsSubmission(interaction, amount) {
         );
 
         // --- R4 TRACKING (ADS) ---
-        const modConf = await db.get(`SELECT r4TrackingEnabled, r4TrackingRole FROM module_configs WHERE guildId = ?`, [interaction.guild.id]);
-        if (modConf && modConf.r4TrackingEnabled && modConf.r4TrackingRole) {
-            const roleId = modConf.r4TrackingRole.replace(/[^0-9]/g, '');
+        const modConf = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [interaction.guild.id]);
+        if (modConf && modConf.r4trackingenabled && modConf.r4trackingrole) {
+            const roleId = modConf.r4trackingrole.replace(/[^0-9]/g, '');
             if (interaction.member && interaction.member.roles && interaction.member.roles.cache.has(roleId)) {
                 const weekId = getISOWeekString();
                 await db.run(
@@ -42,6 +42,13 @@ async function processAdsSubmission(interaction, amount) {
                      ON CONFLICT(userId, guildId, weekId) DO UPDATE SET ads = r4_tracking.ads + ?`,
                     [interaction.user.id, interaction.guild.id, weekId, amount, amount]
                 );
+
+                // Economy reward for ads
+                if (modConf.ecoenabled) {
+                    const { addBalance } = require('../../utils/economyHandler');
+                    const coinsPerAd = modConf.ecocoinsperad || 10;
+                    await addBalance(interaction.user.id, coinsPerAd * amount, interaction.guild.id);
+                }
             }
         }
 

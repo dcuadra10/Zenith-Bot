@@ -66,7 +66,10 @@ function restoreDraft(guildId) {
 function applyDraft(draft) {
     if (!draft || !draft.fields) return;
     if (draft.panelDraft) {
-        try { panelDraft = draft.panelDraft; } catch(e) {}
+        try { 
+            panelDraft = draft.panelDraft;
+            if (!panelDraft.v2Components) panelDraft.v2Components = [];
+        } catch(e) {}
     }
     Object.entries(draft.fields).forEach(([id, data]) => {
         const el = document.getElementById(id);
@@ -81,6 +84,12 @@ function applyDraft(draft) {
             }
         } catch (e) {}
     });
+    
+    // Synchronize UI mode and content
+    toggleV2Mode();
+    renderV2Editor();
+    renderDropdowns();
+
     if (draft.activePage) {
         const link = document.querySelector(`.sidebar-link[data-page="${draft.activePage}"]`);
         if (link) link.click();
@@ -146,9 +155,6 @@ function animateValue(el, start, end, duration) {
     requestAnimationFrame(step);
 }
 
-function closeModal(id) {
-    document.getElementById(id).classList.remove('active');
-}
 
 // ===== SCREEN MANAGEMENT =====
 function showScreen(id) {
@@ -198,6 +204,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (page === 'transcripts') {
                 fetchTranscripts();
+            }
+            if (page === 'economy') {
+                fetchShopItems();
             }
             markDirty(); // track page change for draft
         });
@@ -348,8 +357,9 @@ function populateAllDropdowns() {
         'marketApprovalChannel', 'marketFeeChannel', 'automodLogChannel', 
         'loggingChannel', 'countingChannel', 'swearJarChannel',
         'levelUpChannel', 'ticketsTranscriptChannel', 'ticketsApprovalChannel', 'marketOwnerChannel',
-        'newKingdomSourceChannel', 'newKingdomTargetChannel'
+        'newKingdomTargetChannel', 'ecoWelcomeNotifyChannel'
     ];
+
     
     // Selects that need a category
     const categorySelects = ['cfgTicketCategory', 'statsCategoryId', 'modalCategoryId'];
@@ -669,78 +679,88 @@ function loadModuleToggles(mods) {
     setVal('welcomeImage', mods.welcomeImage);
     setCheck('welcomeUseEmbed', mods.welcomeUseEmbed === undefined || mods.welcomeUseEmbed === null ? true : !!mods.welcomeUseEmbed);
     // Leveling
-    setCheck('toggleLeveling', mods.levelingEnabled);
-    setVal('xpMin', mods.xpMin ?? 5);
-    setVal('xpMax', mods.xpMax ?? 15);
-    setVal('xpCooldown', mods.xpCooldown ?? 60);
-    setVal('levelUpChannel', mods.levelUpChannel);
+    setCheck('toggleLeveling', mods.levelingenabled);
+    setVal('xpMin', mods.xpmin ?? 5);
+    setVal('xpMax', mods.xpmax ?? 15);
+    setVal('xpCooldown', mods.xpcooldown ?? 60);
+    setVal('levelUpChannel', mods.levelupchannel);
     // Tickets
-    setCheck('toggleTickets', mods.ticketsEnabled);
-    if(mods.ticketsMaxActive) setVal('ticketsMaxActive', mods.ticketsMaxActive ?? 2);
-    setVal('ticketsTranscriptChannel', mods.ticketsTranscriptChannel);
-    setVal('ticketCategoryId', mods.ticketCategoryId);
-    setVal('ticketsApprovalChannel', mods.ticketsApprovalChannel);
+    setCheck('toggleTickets', mods.ticketsenabled);
+    if(mods.ticketsmaxactive) setVal('ticketsMaxActive', mods.ticketsmaxactive ?? 2);
+    setVal('ticketsTranscriptChannel', mods.ticketstranscriptchannel);
+    setVal('ticketCategoryId', mods.ticketcategoryid);
+    setVal('ticketsApprovalChannel', mods.ticketsapprovalchannel);
     // Automod
-    setCheck('toggleAutomod', mods.automodEnabled);
-    setCheck('automodSpam', mods.automodSpam);
-    setCheck('automodLinks', mods.automodLinks);
-    setCheck('automodMentions', mods.automodMentions);
-    setCheck('automodCaps', mods.automodCaps);
-    setCheck('automodWords', mods.automodWords);
-    setVal('automodWordList', mods.automodWordList || 'fuck,shit,bitch,asshole,dick,cunt,pussy,motherfucker,puta,mierda,pendejo,cabron');
-    setVal('automodMaxMentions', mods.automodMaxMentions ?? 5);
-    setVal('automodLogChannel', mods.automodLogChannel);
+    setCheck('toggleAutomod', mods.automodenabled);
+    setCheck('automodSpam', mods.automodspam);
+    setCheck('automodLinks', mods.automodlinks);
+    setCheck('automodMentions', mods.automodmentions);
+    setCheck('automodCaps', mods.automodcaps);
+    setCheck('automodWords', mods.automodwords);
+    setVal('automodWordList', mods.automodwordlist || 'fuck,shit,bitch,asshole,dick,cunt,pussy,motherfucker,puta,mierda,pendejo,cabron');
+    setVal('automodMaxMentions', mods.automodmaxmentions ?? 5);
+    setVal('automodLogChannel', mods.automodlogchannel);
     // Logging
-    setCheck('toggleLogging', mods.loggingEnabled);
-    setVal('loggingChannel', mods.loggingChannel);
-    setCheck('logEdits', mods.logEdits);
-    setCheck('logDeletes', mods.logDeletes);
-    setCheck('logMembers', mods.logMembers);
-    setCheck('logRoles', mods.logRoles);
-    setCheck('logChannels', mods.logChannels);
-    setCheck('logVoice', mods.logVoice);
-    setCheck('logServer', mods.logServer);
-    setCheck('logInvites', mods.logInvites);
+    setCheck('toggleLogging', mods.loggingenabled);
+    setVal('loggingChannel', mods.loggingchannel);
+    setCheck('logEdits', mods.logedits);
+    setCheck('logDeletes', mods.logdeletes);
+    setCheck('logMembers', mods.logmembers);
+    setCheck('logRoles', mods.logroles);
+    setCheck('logChannels', mods.logchannels);
+    setCheck('logVoice', mods.logvoice);
+    setCheck('logServer', mods.logserver);
+    setCheck('logInvites', mods.loginvites);
     // Auto-Role
-    setCheck('toggleAutorole', mods.autoroleEnabled);
-    setVal('autoroleIds', mods.autoroleIds);
+    setCheck('toggleAutorole', mods.autoroleenabled);
+    setVal('autoroleIds', mods.autoroleids);
     // Swear Jar
-    setCheck('toggleSwearJar', mods.swearJarEnabled);
-    setVal('swearJarChannel', mods.swearJarChannel);
-    setVal('swearJarWords', mods.swearJarWords || 'fuck,shit,bitch,asshole,dick,cunt,pussy,motherfucker,puta,mierda,pendejo,cabron');
-    setCheck('swearJarPing', mods.swearJarPing === undefined || mods.swearJarPing === null ? true : !!mods.swearJarPing);
+    setCheck('toggleSwearJar', mods.swearjarenabled);
+    setVal('swearJarChannel', mods.swearjarchannel);
+    setVal('swearJarWords', mods.swearjarwords || 'fuck,shit,bitch,asshole,dick,cunt,pussy,motherfucker,puta,mierda,pendejo,cabron');
+    setCheck('swearJarPing', mods.swearjarping === undefined || mods.swearjarping === null ? true : !!mods.swearjarping);
     // Counting
-    setCheck('toggleCounting', mods.countingEnabled);
-    setVal('countingChannel', mods.countingChannel);
-    setVal('countingCurrent', mods.countingCurrent);
-    setCheck('countingSameUser', mods.countingSameUser);
-    setCheck('countingReset', mods.countingReset);
-    setCheck('countingMath', mods.countingMath);
+    setCheck('toggleCounting', mods.countingenabled);
+    setVal('countingChannel', mods.countingchannel);
+    setVal('countingCurrent', mods.countingcurrent);
+    setCheck('countingSameUser', mods.countingsameuser);
+    setCheck('countingReset', mods.countingreset);
+    setCheck('countingMath', mods.countingmath);
     // Server Stats
-    setCheck('toggleServerStats', mods.serverStatsEnabled);
-    setCheck('statsTotalMembers', mods.statsTotalMembers);
-    setCheck('statsOnline', mods.statsOnline);
-    setCheck('statsBots', mods.statsBots);
-    setCheck('statsChannels', mods.statsChannels);
-    setVal('statsCategoryId', mods.statsCategoryId);
+    setCheck('toggleServerStats', mods.serverstatsenabled);
+    setCheck('statsTotalMembers', mods.statstotalmembers);
+    setCheck('statsOnline', mods.statsonline);
+    setCheck('statsBots', mods.statsbots);
+    setCheck('statsChannels', mods.statschannels);
+    setVal('statsCategoryId', mods.statscategoryid);
     // Anti-Nuke
-    setCheck('toggleAntinuke', mods.antinukeEnabled);
-    setCheck('antinukeBan', mods.antinukeBan);
-    setCheck('antinukeChannel', mods.antinukeChannel);
-    setCheck('antinukeRole', mods.antinukeRole);
-    setCheck('antinukeWebhook', mods.antinukeWebhook);
-    setVal('antinukeThreshold', mods.antinukeThreshold ?? 5);
-    setVal('antinukeWhitelist', mods.antinukeWhitelist);
+    setCheck('toggleAntinuke', mods.antinukeenabled);
+    setCheck('antinukeBan', mods.antinukeban);
+    setCheck('antinukeChannel', mods.antinukechannel);
+    setCheck('antinukeRole', mods.antinukerole);
+    setCheck('antinukeWebhook', mods.antinukewebhook);
+    setVal('antinukeThreshold', mods.antinukethreshold ?? 5);
+    setVal('antinukeWhitelist', mods.antinukewhitelist);
     // R4 Tracking
-    setCheck('toggleR4Tracking', mods.r4TrackingEnabled);
-    setVal('r4TrackingRole', mods.r4TrackingRole);
-    setVal('r4TrackingAdQuota', mods.r4TrackingAdQuota ?? 40);
-    setVal('r4TrackingMsgQuota', mods.r4TrackingMsgQuota ?? 245);
-    // New Kingdom
+    setCheck('toggleR4Tracking', mods.r4trackingenabled);
+    setVal('r4TrackingRole', mods.r4trackingrole);
+    setVal('r4TrackingAdQuota', mods.r4trackingadquota ?? 40);
+    setVal('r4TrackingMsgQuota', mods.r4trackingmsgquota ?? 245);
     setCheck('toggleNewKingdom', mods.newkingdomenabled);
-    setVal('newKingdomSourceChannel', mods.newkingdomsourcechannel);
     setVal('newKingdomTargetChannel', mods.newkingdomtargetchannel);
+
     setVal('newKingdomPingRole', mods.newkingdompingrole);
+    // Economy
+    setCheck('toggleEconomy', mods.ecoenabled);
+    setVal('ecoCoinsPerMessage', mods.ecocoinspermessage ?? 1);
+    setVal('ecoCoinsPerAd', mods.ecocoinsperad ?? 10);
+    setVal('ecoCoinsPerInvite', mods.ecocoinsperinvite ?? 50);
+    setVal('ecoCoinsPerWelcome', mods.ecocoinsperwelcome ?? 5);
+    setVal('ecoCoinsPerBoost', mods.ecocoinsperboost ?? 100);
+    setVal('ecoCoinsPerGiveaway', mods.ecocoinspergiveaway ?? 200);
+    setVal('ecoCoinsPerVCMinute', mods.ecocoinspervcminute ?? 1);
+    setVal('ecoWelcomeKeywords', mods.ecowelcomekeywords || 'welcome,bienvenido,bienvenida');
+    setVal('ecoWelcomeNotifyChannel', mods.ecowelcomenotifychannel);
 }
 
 function setCheck(id, val) {
@@ -895,11 +915,22 @@ async function saveModuleConfig(moduleName) {
         r4TrackingRole: getVal('r4TrackingRole'),
         r4TrackingAdQuota: parseInt(getVal('r4TrackingAdQuota')) || 40,
         r4TrackingMsgQuota: parseInt(getVal('r4TrackingMsgQuota')) || 245,
-        // New Kingdom
-        newkingdomenabled: getCheck('toggleNewKingdom'),
-        newkingdomsourcechannel: getVal('newKingdomSourceChannel'),
-        newkingdomtargetchannel: getVal('newKingdomTargetChannel'),
-        newkingdompingrole: getVal('newKingdomPingRole')
+        newKingdomEnabled: getCheck('toggleNewKingdom'),
+        newKingdomTargetChannel: getVal('newKingdomTargetChannel'),
+        newKingdomPingRole: getVal('newKingdomPingRole'),
+
+
+        // Economy
+        ecoEnabled: getCheck('toggleEconomy'),
+        ecoCoinsPerMessage: parseInt(getVal('ecoCoinsPerMessage')) || 1,
+        ecoCoinsPerAd: parseInt(getVal('ecoCoinsPerAd')) || 10,
+        ecoCoinsPerInvite: parseInt(getVal('ecoCoinsPerInvite')) || 50,
+        ecoCoinsPerWelcome: parseInt(getVal('ecoCoinsPerWelcome')) || 5,
+        ecoCoinsPerBoost: parseInt(getVal('ecoCoinsPerBoost')) || 100,
+        ecoCoinsPerGiveaway: parseInt(getVal('ecoCoinsPerGiveaway')) || 200,
+        ecoCoinsPerVCMinute: parseInt(getVal('ecoCoinsPerVCMinute')) || 1,
+        ecoWelcomeKeywords: getVal('ecoWelcomeKeywords'),
+        ecoWelcomeNotifyChannel: getVal('ecoWelcomeNotifyChannel')
     };
 
     try {
@@ -1344,7 +1375,9 @@ function toggleV2Mode() {
 function toggleAddMenu(e) {
     if (e) e.stopPropagation();
     const menu = document.getElementById('addComponentMenu');
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    if (!menu) return;
+    const isHidden = menu.style.display === 'none' || menu.style.display === '';
+    menu.style.display = isHidden ? 'block' : 'none';
 }
 
 // Close menu when clicking outside
@@ -1539,6 +1572,15 @@ function updateV2SubField(pIdx, sIdx, field, value) {
     updatePanelPreview();
 }
 
+function removeV2SubComponent(pIdx, sIdx) {
+    if (panelDraft.v2Components[pIdx].components) {
+        panelDraft.v2Components[pIdx].components.splice(sIdx, 1);
+        renderV2Editor();
+        updatePanelPreview();
+        markDirty();
+    }
+}
+
 function getIconForType(type) {
     const icons = { text: 'fas fa-align-left', section: 'fas fa-th-large', separator: 'fas fa-minus', mediaGallery: 'fas fa-images', actionRow: 'fas fa-bars' };
     return icons[type] || 'fas fa-cube';
@@ -1657,7 +1699,7 @@ function clearPanelForm() {
         saveBtn.classList.remove('z-btn-danger');
     }
 
-    panelDraft = { dropdowns: [], buttonRows: [] };
+    panelDraft = { dropdowns: [], buttonRows: [], v2Components: [] };
     document.getElementById('panelChannelId').value = '';
     document.getElementById('panelTitle').value = '';
     document.getElementById('panelEmoji').value = '';
@@ -1960,7 +2002,7 @@ async function savePanel() {
                 saveBtn.classList.remove('z-btn-danger');
             }
 
-            panelDraft.dropdowns = []; panelDraft.buttonRows = [];
+            panelDraft.dropdowns = []; panelDraft.buttonRows = []; panelDraft.v2Components = [];
             renderDropdowns();
             document.getElementById('panelChannelId').value = '';
             document.getElementById('panelTitle').value = '';
@@ -2076,6 +2118,11 @@ document.querySelectorAll('.sidebar-link').forEach(link => {
     link.addEventListener('click', () => {
         currentPage = link.dataset.page;
         document.getElementById('saveBar').classList.remove('visible');
+        
+        if (currentPage === 'economy') {
+            fetchShopItems();
+        }
+
         // Auto-close sidebar on mobile
         if (window.innerWidth <= 768) {
             toggleMobileSidebar();
@@ -2528,5 +2575,109 @@ async function saveMarketConfig() {
         }
     } catch (e) {
         showToast('❌ Server error saving config', true);
+    }
+}
+
+// ===== ECONOMY SHOP MANAGEMENT =====
+async function fetchShopItems() {
+    if (!activeGuild) return;
+    const tbody = document.getElementById('shopTableBody');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Retrieving treasury inventory...</td></tr>';
+    
+    try {
+        const res = await fetch(`${API_URL}/economy/shop/${activeGuild.id}`);
+        const items = await res.json();
+        
+        if (items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color:var(--text-muted);">Treasury empty. Manufacture items below.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        items.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><code>${item.id}</code></td>
+                <td><strong>${item.name}</strong></td>
+                <td><span class="z-badge">${item.type.toUpperCase()}</span></td>
+                <td><span style="color:var(--gold-500);font-weight:700;">💰 ${item.price}</span></td>
+                <td>
+                    <button class="z-btn z-btn-danger z-btn-sm" onclick="deleteShopItem('${item.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color:var(--accent-red);">Error accessing treasury data.</td></tr>';
+    }
+}
+
+function openShopAddModal() {
+    document.getElementById('shopModalTitle').textContent = 'Manufacture New Item';
+    document.getElementById('shopItemName').value = '';
+    document.getElementById('shopItemPrice').value = '100';
+    document.getElementById('shopItemDesc').value = '';
+    document.getElementById('shopItemType').value = 'role';
+    toggleShopRoleInput();
+    
+    // Populate roles if select is empty
+    const roleSelect = document.getElementById('shopItemRole');
+    if (roleSelect.options.length === 0) {
+        fetch(`${API_URL}/guild/${activeGuild.id}/roles`)
+            .then(r => r.json())
+            .then(roles => {
+                roleSelect.innerHTML = roles.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+            });
+    }
+
+    document.getElementById('shopAddModal').style.display = 'flex';
+}
+
+function toggleShopRoleInput() {
+    const type = document.getElementById('shopItemType').value;
+    document.getElementById('shopRoleInputGroup').style.display = (type === 'role') ? 'block' : 'none';
+}
+
+async function saveShopItem() {
+    const name = document.getElementById('shopItemName').value;
+    const price = parseInt(document.getElementById('shopItemPrice').value);
+    const description = document.getElementById('shopItemDesc').value;
+    const type = document.getElementById('shopItemType').value;
+    const roleId = type === 'role' ? document.getElementById('shopItemRole').value : null;
+
+    if (!name || isNaN(price)) return showToast('Please fill item name and price.', true);
+
+    try {
+        const res = await fetch(`${API_URL}/economy/shop/${activeGuild.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description, price, type, roleId })
+        });
+        if (res.ok) {
+            showToast('✅ Item manufactured!');
+            closeModal('shopAddModal');
+            fetchShopItems();
+        } else {
+            showToast('Failed to register item', true);
+        }
+    } catch (e) {
+        showToast('Error saving item', true);
+    }
+}
+
+async function deleteShopItem(id) {
+    if (!confirm('Decommission this item?')) return;
+    try {
+        const res = await fetch(`${API_URL}/economy/shop/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('✅ Item decommissioned.');
+            fetchShopItems();
+        } else {
+            showToast('Failed to delete item', true);
+        }
+    } catch (e) {
+        showToast('Error deleting item', true);
     }
 }

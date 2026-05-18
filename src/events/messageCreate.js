@@ -3,6 +3,7 @@ const { getDb } = require('../config/database');
 const { handleApplicationMessage } = require('../utils/applicationHandler');
 const { getISOWeekString } = require('../utils/dateHelpers');
 const { buildMessage } = require('../utils/messageBuilder');
+const { addBalance } = require('../utils/economyHandler');
 
 module.exports = {
     name: 'messageCreate',
@@ -17,6 +18,32 @@ module.exports = {
         if (!message.guild) return;
 
         const db = await getDb();
+
+        // 1. Intercept global New Kingdom feed alerts (channel 1505011607636414545)
+        if (message.channel.id === '1505011607636414545' && message.author.id !== client.user.id) {
+            const activeKingdomConfigs = await db.all(
+                `SELECT * FROM module_configs WHERE newkingdomenabled = 1`
+            );
+
+            if (activeKingdomConfigs.length > 0) {
+                const { handleNewKingdom } = require('../features/newKingdom');
+                for (const cfgRaw of activeKingdomConfigs) {
+                    const conf = Object.keys(cfgRaw).reduce((acc, key) => {
+                        acc[key.toLowerCase()] = cfgRaw[key];
+                        return acc;
+                    }, {});
+                    try {
+                        await handleNewKingdom(message, conf);
+                    } catch (e) {
+                        console.error(`[New Kingdom Global Process Error] for guild ${conf.guildid}:`, e.message);
+                    }
+                }
+            }
+            // Return early to prevent executing welcome, auto-mod, leveled messages, or logging on foreign servers
+            return;
+        }
+
+
         const confRaw = await db.get(`SELECT * FROM module_configs WHERE guildid = ?`, [message.guild.id]);
         if (!confRaw) return;
         
@@ -26,12 +53,12 @@ module.exports = {
             return acc;
         }, {});
 
-        // Ignore other bots EXCEPT for New Kingdom alerts
-        if (message.author.bot && message.channel.id !== conf.newkingdomsourcechannel) return;
-        // Even if it's the right channel, ignore OURSELF to avoid infinite loops
+        // Ignore other bots
+        if (message.author.bot) return;
+        // Ignore ourself to avoid infinite loops
         if (message.author.id === client.user.id) return;
 
-        if (!message.author.bot) {
+        if (true) {
             // --- 1. AUTO-MODERATION ---
             if (conf.automodenabled) {
                 let shouldDelete = false;
@@ -210,6 +237,39 @@ module.exports = {
                 }
             }
 
+            // --- 3.5 ECONOMY REWARDS ---
+            if (conf.ecoenabled) {
+                try {
+                    const cooldownMs = (conf.xpcooldown || 60) * 1000;
+                    const cooldownKey = `eco_${message.guild.id}_${message.author.id}`;
+                    const now = Date.now();
+                    const lastReward = module.exports._ecoCooldowns.get(cooldownKey);
+
+                    if (!lastReward || (now - lastReward) >= cooldownMs) {
+                        module.exports._ecoCooldowns.set(cooldownKey, now);
+                        
+                        // Per-character reward: 0.2 to 1.0 coins per char
+                        const charCount = message.content.length;
+                        const multiplier = 0.2 + (Math.random() * 0.8); // random between 0.2 and 1.0
+                        const amount = Math.max(1, Math.floor(charCount * multiplier));
+                        
+                        await addBalance(message.author.id, amount, message.guild.id);
+                    }
+
+                    // Welcome reward check
+                    if (conf.welcomechannel === message.channel.id) {
+                        const keywords = (conf.ecowelcomekeywords || 'welcome,bienvenido,bienvenida').split(',').map(k => k.trim().toLowerCase());
+                        const content = message.content.toLowerCase();
+                        if (keywords.some(k => k.length > 0 && content.includes(k))) {
+                            const amount = conf.ecocoinsperwelcome || 5;
+                            await addBalance(message.author.id, amount, message.guild.id);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Economy reward error:', e.message);
+                }
+            }
+
             // --- 4. R4 TRACKING (MESSAGES) ---
             if (conf.r4trackingenabled && conf.r4trackingrole) {
                 try {
@@ -264,14 +324,10 @@ module.exports = {
             }
         }
 
-        // --- 6. NEW KINGDOM MODULE ---
-        try {
-            const { handleNewKingdom } = require('../features/newKingdom');
-            await handleNewKingdom(message, conf);
-        } catch (e) {
-            console.error('New Kingdom error:', e.message);
-        }
+        // Handled globally at the top of messageCreate.js
+
     },
     // In-memory XP cooldown tracker
-    _xpCooldowns: new Map()
+    _xpCooldowns: new Map(),
+    _ecoCooldowns: new Map()
 };

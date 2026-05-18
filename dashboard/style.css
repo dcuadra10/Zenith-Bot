@@ -738,6 +738,43 @@ textarea.z-input { resize: vertical; min-height: 100px; line-height: 1.6; }
     gap: 16px;
     font-family: 'Inter', sans-serif;
 }
+.z-dropdown-content {
+    animation: fadeInScale 0.2s ease;
+    box-shadow: var(--shadow-xl), 0 0 30px rgba(0,0,0,0.5);
+}
+
+.z-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.9rem;
+}
+
+.z-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.z-dropdown-item:hover {
+    background: rgba(255, 215, 0, 0.08);
+    color: var(--gold-500);
+    padding-left: 24px;
+}
+
+.z-dropdown-item i {
+    font-size: 1.1rem;
+    color: var(--gold-600);
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
 .discord-message {
     display: flex;
     gap: 16px;

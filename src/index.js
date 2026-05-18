@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js'); // Zenith City Life Update
 require('dotenv').config();
 const { validateEnv } = require('./config/env');
 const express = require('express');
@@ -6,11 +6,21 @@ const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
 const cookieParser = require('cookie-parser');
-const { getDb } = require('./config/database');
+const { getDb, initializeSchema } = require('./config/database');
 
 const app = express();
 app.use(cors());
 app.use(cookieParser());
+app.use(express.json());
+
+// Request logging for debugging
+app.use((req, res, next) => {
+    if (req.url.startsWith('/api')) {
+        console.log(`[API] ${req.method} ${req.url}`);
+    }
+    next();
+});
+
 app.use(express.static(path.join(__dirname, '../dashboard')));
 
 // Middleware to verify Discord Token
@@ -38,11 +48,16 @@ async function authenticateToken(req, res, next) {
 
 // Helper to check if user has admin permissions in a guild
 async function checkAdmin(userId, guildId) {
+    if (!client.isReady()) return false;
     const guild = client.guilds.cache.get(guildId);
     if (!guild) return false;
-    const member = await guild.members.fetch(userId).catch(() => null);
-    if (!member) return false;
-    return member.permissions.has('Administrator');
+    try {
+        const member = await guild.members.fetch(userId).catch(() => null);
+        if (!member) return false;
+        return member.permissions.has('Administrator');
+    } catch (e) {
+        return false;
+    }
 }
 
 const client = new Client({
@@ -525,7 +540,7 @@ app.post('/api/giveaways/:guildId', async (req, res) => {
 
         const { EmbedBuilder } = require('discord.js');
         const embed = new EmbedBuilder()
-            .setTitle(`🎉 Giveaway: ${prize}`)
+            .setTitle(`Giveaway: ${prize}`)
             .setDescription(desc)
             .setColor(color || '#a855f7')
             .setTimestamp(new Date(endTime));
@@ -613,10 +628,35 @@ app.get('/api/modules/:guildId', async (req, res) => {
     if (!token) return res.status(401).json({ error: 'No autorizado' });
     try {
         const db = await getDb();
-        const config = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [req.params.guildId]);
-        res.json(config || {});
+        const configRaw = await db.get(`SELECT * FROM module_configs WHERE guildId = ?`, [req.params.guildId]);
+        if (!configRaw) return res.json({});
+        
+        // Normalize keys to lowercase for the dashboard
+        const config = Object.keys(configRaw).reduce((acc, key) => {
+            acc[key.toLowerCase()] = configRaw[key];
+            return acc;
+        }, {});
+        
+        res.json(config);
     } catch (e) {
         res.status(500).json({ error: 'Error fetching module configs' });
+    }
+});
+
+// GET Guild Roles
+app.get('/api/guild/:guildId/roles', async (req, res) => {
+    try {
+
+        const guild = client.guilds.cache.get(req.params.guildId);
+        if (!guild) return res.status(404).json({ error: 'Guild not found' });
+        
+        const roles = guild.roles.cache
+            .filter(r => r.name !== '@everyone' && !r.managed)
+            .map(r => ({ id: r.id, name: r.name }));
+        
+        res.json(roles);
+    } catch (e) {
+        res.status(500).json({ error: 'Error fetching roles' });
     }
 });
 
@@ -645,13 +685,18 @@ app.post('/api/modules/:guildId', async (req, res) => {
             'antinukeEnabled', 'antinukeBan', 'antinukeChannel', 'antinukeRole', 'antinukeWebhook', 'antinukeThreshold', 'antinukeWhitelist',
             'r4TrackingEnabled', 'r4TrackingRole', 'r4TrackingAdQuota', 'r4TrackingMsgQuota',
             'swearJarEnabled', 'swearJarChannel', 'swearJarWords', 'swearJarPing',
-            'newkingdomenabled', 'newkingdomsourcechannel', 'newkingdomtargetchannel', 'newkingdompingrole'
+            'newKingdomEnabled', 'newKingdomSourceChannel', 'newKingdomTargetChannel', 'newKingdomPingRole',
+            'ecoEnabled', 'ecoCoinsPerMessage', 'ecoCoinsPerAd', 'ecoCoinsPerInvite', 'ecoCoinsPerWelcome', 'ecoCoinsPerBoost', 'ecoCoinsPerGiveaway', 'ecoCoinsPerVCMinute', 'ecoWelcomeKeywords', 'ecoWelcomeNotifyChannel'
         ];
         
         const allFields = ['guildId', ...fields];
         const placeholders = allFields.map(() => '?').join(',');
         const updateSet = fields.map(f => `${f}=excluded.${f}`).join(',');
-        const values = [guildId, ...fields.map(f => b[f] !== undefined ? b[f] : null)];
+        const values = [guildId, ...fields.map(f => {
+            const foundKey = Object.keys(b).find(k => k.toLowerCase() === f.toLowerCase());
+            return (foundKey !== undefined && b[foundKey] !== undefined) ? b[foundKey] : null;
+        })];
+
         
         await db.run(
             `INSERT INTO module_configs (${allFields.join(',')}) VALUES (${placeholders}) ON CONFLICT(guildId) DO UPDATE SET ${updateSet}`,
@@ -795,6 +840,54 @@ app.post('/api/levels/import/:guildId', async (req, res) => {
     }
 });
 
+// GET Economy Shop
+app.get('/api/economy/shop/:guildId', authenticateToken, async (req, res) => {
+    try {
+        const db = await getDb();
+        const items = await db.all(`SELECT * FROM economy_shop WHERE guildId = ?`, [req.params.guildId]);
+        res.json(items);
+    } catch (e) {
+        res.status(500).json({ error: 'Error fetching shop' });
+    }
+});
+
+// POST Add Shop Item
+app.post('/api/economy/shop/:guildId', authenticateToken, async (req, res) => {
+    try {
+        const hasAdmin = await checkAdmin(req.user.id, req.params.guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+        const { name, description, price, type, roleId } = req.body;
+        const db = await getDb();
+        const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+        
+        await db.run(
+            `INSERT INTO economy_shop (id, guildId, name, description, price, type, roleId) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [id, req.params.guildId, name, description, price, type, roleId || null]
+        );
+        res.json({ success: true, id });
+    } catch (e) {
+        res.status(500).json({ error: 'Error adding item' });
+    }
+});
+
+// DELETE Shop Item
+app.delete('/api/economy/shop/:id', authenticateToken, async (req, res) => {
+    try {
+        const db = await getDb();
+        const item = await db.get(`SELECT guildId FROM economy_shop WHERE id = ?`, [req.params.id]);
+        if (!item) return res.status(404).json({ error: 'Item not found' });
+
+        const hasAdmin = await checkAdmin(req.user.id, item.guildId);
+        if (!hasAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+        await db.run(`DELETE FROM economy_shop WHERE id = ?`, [req.params.id]);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Error deleting item' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🌍 Dashboard Web corriendo en puerto ${PORT}`));
 
@@ -812,5 +905,75 @@ require('./features/r4Tracker')(client);
 // Iniciar bots personalizados
 const customBotManager = require('./managers/CustomBotManager');
 customBotManager.initAll();
+
+// Business Update Loop (GTA Style) - Every 15 minutes
+setInterval(async () => {
+    try {
+        const db = await getDb();
+        // --- MARKET COMPETITION SYSTEM ---
+        const businessTypes = ['car_wash', 'nightclub', 'law_firm', 'tech_lab', 'lab', 'cash'];
+        
+        for (const type of businessTypes) {
+            // Get all businesses of this type (Legal and Mafia)
+            const legal = await db.all(`SELECT * FROM economy_operations WHERE type = ?`, [type]);
+            const mafia = await db.all(`SELECT * FROM mafia_businesses WHERE type = ?`, [type]);
+            const all = [...legal.map(l => ({ ...l, isLegal: true })), ...mafia.map(m => ({ ...m, isMafia: true }))];
+            
+            if (all.length === 0) continue;
+
+            // Calculate Competitive Scores
+            let totalScore = 0;
+            const scored = all.map(b => {
+                const score = (b.level || 1) * (1 + (b.employeeCount || 0) * 0.2);
+                totalScore += score;
+                return { ...b, score };
+            });
+
+            // Distribute Market Share and Process Bot Purchases
+            const totalBotPurchases = 100 * all.length; // 100 purchases per business on average
+            for (const b of scored) {
+                const share = b.score / totalScore;
+                const purchases = Math.floor(totalBotPurchases * share);
+                
+                // Update Market Share in DB
+                if (b.isLegal) {
+                    await db.run(`UPDATE economy_operations SET marketShare = ? WHERE id = ?`, [share, b.id]);
+                    // Bot purchases boost pending profits (add time to lastCollect)
+                    const boostMinutes = purchases * 2; 
+                    await db.run(`UPDATE economy_operations SET lastCollect = lastCollect - interval '${boostMinutes} minutes' WHERE id = ?`, [b.id]);
+                } else {
+                    await db.run(`UPDATE mafia_businesses SET marketShare = ? WHERE mafiaId = ? AND type = ?`, [share, b.mafiaId, b.type]);
+                    // Bot purchases consume stock and give money to vault
+                    if (b.stock >= purchases) {
+                        const revenue = purchases * 50; // 50 coins per purchase
+                        await db.run(`UPDATE mafia_businesses SET stock = stock - ? WHERE mafiaId = ? AND type = ?`, [purchases, b.mafiaId, b.type]);
+                        await db.run(`UPDATE economy_mafias SET vault = vault + ? WHERE id = ?`, [revenue, b.mafiaId]);
+                    }
+                }
+            }
+        }
+
+        // --- ORIGINAL PRODUCTION LOOP ---
+        const businesses = await db.all(`SELECT * FROM mafia_businesses WHERE supplies > 0 OR type IN ('nightclub', 'car_wash', 'tech_lab', 'law_firm')`);
+        
+        for (const b of businesses) {
+            const levelMult = b.level || 1;
+            const legalIncomes = { car_wash: 200, nightclub: 1000, law_firm: 3000, tech_lab: 8000 };
+            
+            if (legalIncomes[b.type]) {
+                // Passive clean cash to vault
+                const income = legalIncomes[b.type] * levelMult;
+                await db.run(`UPDATE economy_mafias SET vault = vault + ? WHERE id = ?`, [income, b.mafiaId]);
+                await db.run(`UPDATE mafia_businesses SET lastUpdate = CURRENT_TIMESTAMP WHERE mafiaId = ? AND type = ?`, [b.mafiaId, b.type]);
+            } else if (b.type === 'lab' && b.supplies >= 10) {
+                await db.run(`UPDATE mafia_businesses SET stock = stock + ?, supplies = supplies - 10, lastUpdate = CURRENT_TIMESTAMP WHERE mafiaId = ? AND type = ?`, [50 * levelMult, b.mafiaId, b.type]);
+            } else if (b.type === 'cash' && b.supplies >= 5) {
+                await db.run(`UPDATE mafia_businesses SET stock = stock + ?, supplies = supplies - 5, lastUpdate = CURRENT_TIMESTAMP WHERE mafiaId = ? AND type = ?`, [25 * levelMult, b.mafiaId, b.type]);
+            }
+        }
+    } catch (e) {
+        console.error('[Business Loop Error]:', e);
+    }
+}, 15 * 60 * 1000);
 
 client.login(process.env.DISCORD_TOKEN);
